@@ -15,6 +15,7 @@ from .schemas import (
     UserLoginResponse,
     UserRoleAssignRequest,
     UserUpdateRequest,
+    UserDetailResponse,
 )
 from .service import auth_service
 # from app.core.cache import clear_cache, custom_key_builder
@@ -40,11 +41,12 @@ async def refresh(
     return await auth_service.refresh(session=session, refresh_token=authorization)
 
 
-@router.get("/me", response_model=UserCreateResponse)
+@router.get("/me", response_model=UserDetailResponse)
 # @cache(expire=60, key_builder=custom_key_builder)
 async def get_me(
     authorization: str = Header(...),
     session: AsyncSession = Depends(db_helper.session_getter),
+    _: PermissionRequired = Depends(PermissionRequired("user:me")),
 ):
     return await auth_service.get_current_user(session=session, token=authorization)
 

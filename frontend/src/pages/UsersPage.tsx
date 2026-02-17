@@ -149,7 +149,7 @@ const UsersPage = () => {
                                         <TableCell className="font-medium">{user.username}</TableCell>
                                         <TableCell>
                                             <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-foreground">
-                                                {getRoleName(user.role_id)}
+                                                {getRoleName(user.roles?.[0]?.id)}
                                             </span>
                                         </TableCell>
                                         <TableCell>
@@ -260,7 +260,7 @@ const UserModal = ({
             reset({
                 username: user.username,
                 password: '', // Don't fill password on edit
-                role_id: user.role_id ? user.role_id.toString() : '',
+                role_id: user.roles?.[0]?.id ? user.roles[0].id.toString() : '',
                 is_active: user.is_active,
             });
         } else {

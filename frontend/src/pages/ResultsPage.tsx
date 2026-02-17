@@ -9,7 +9,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/Table';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2, FileText } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
@@ -29,17 +29,9 @@ const ResultsPage = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Results</h1>
-                    <p className="text-muted-foreground">View student quiz performance</p>
-                </div>
-            </div>
+
 
             <Card>
-                <CardHeader>
-                    <CardTitle>All Results</CardTitle>
-                </CardHeader>
                 <CardContent>
                     {isResultsLoading ? (
                         <div className="flex justify-center p-8">
@@ -48,18 +40,18 @@ const ResultsPage = () => {
                     ) : results.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                             <FileText className="h-12 w-12 mb-4 opacity-20" />
-                            <p>No results found.</p>
+                            <p>Natijalar topilmadi.</p>
                         </div>
                     ) : (
                         <Table>
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>ID</TableHead>
-                                    <TableHead>Student</TableHead>
-                                    <TableHead>Quiz</TableHead>
-                                    <TableHead>Score</TableHead>
-                                    <TableHead>Correct / Total</TableHead>
-                                    <TableHead>Date</TableHead>
+                                    <TableHead>Talaba</TableHead>
+                                    <TableHead>Test</TableHead>
+                                    <TableHead>Ball</TableHead>
+                                    <TableHead>To'g'ri / Jami</TableHead>
+                                    <TableHead>Sana</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -67,9 +59,9 @@ const ResultsPage = () => {
                                     <TableRow key={result.id}>
                                         <TableCell>{result.id}</TableCell>
                                         <TableCell className="font-medium">
-                                            {result.user?.username || `User ${result.user_id}`}
+                                            {result.user?.username || `Foydalanuvchi ${result.user_id}`}
                                         </TableCell>
-                                        <TableCell>{result.quiz?.title || `Quiz ${result.quiz_id}`}</TableCell>
+                                        <TableCell>{result.quiz?.title || `Test ${result.quiz_id}`}</TableCell>
                                         <TableCell>
                                             <span className={
                                                 result.grade >= 80 ? "text-green-600 font-medium" :

@@ -8,6 +8,8 @@ from app.models.user.model import User
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from app.models.teacher.model import Teacher
+from app.models.student.model import Student
 
 from .schemas import UserLoginRequest, UserLoginResponse
 
@@ -58,7 +60,17 @@ class UserService:
     async def get_current_user(self, session: AsyncSession, token: str) -> User:
         token = token.split(" ")[1]
         payload = self.token_decode(token)
-        user = await self.get_user_by_id(session, payload["user_id"])
+        stmt = (
+            select(User)
+            .where(User.id == payload["user_id"])
+            .options(
+                selectinload(User.roles),
+                selectinload(User.teacher).selectinload(Teacher.kafedra),
+                selectinload(User.student).selectinload(Student.group),
+            )
+        )
+        result = await session.execute(stmt)
+        user = result.scalar_one_or_none()
 
         if not user:
             raise HTTPException(

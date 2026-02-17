@@ -19,6 +19,7 @@ class UserView(ModelView, model=User):
     }
 
     form_excluded_columns = [
+        "group_teachers",
         "user_answers",
         "teacher",
         "questions",

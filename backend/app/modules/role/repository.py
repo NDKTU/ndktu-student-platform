@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status
 from app.models.role.model import Role
 from app.models.permission.model import Permission
+from app.models.role_permission.model import RolePermission
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -21,6 +22,23 @@ class RoleRepository:
 
         new_role = Role(name=data.name)
         session.add(new_role)
+
+        # Auto-assign 'user:me' permission
+        stmt_perm = select(Permission).where(Permission.name == "user:me")
+        result_perm = await session.execute(stmt_perm)
+        user_me_perm = result_perm.scalar_one_or_none()
+
+        if not user_me_perm:
+            user_me_perm = Permission(name="user:me")
+            session.add(user_me_perm)
+            await session.flush() # Ensure ID is generated
+
+        # Explicitly create RolePermission
+        # We need role_id, so flush new_role
+        await session.flush() 
+        
+        role_permission = RolePermission(role_id=new_role.id, permission_id=user_me_perm.id)
+        session.add(role_permission)
 
         try:
             await session.commit()

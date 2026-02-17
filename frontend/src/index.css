@@ -67,35 +67,38 @@
   }
 
   .dark {
-    --background: hsl(222.2 47.4% 11.2%);
-    /* Deep dark blue */
+    /* comfortable blue / midnight palette */
+    --background: hsl(226 50% 10%);
+    /* deeper, richer blue */
     --foreground: hsl(210 40% 98%);
 
-    --card: hsl(222.2 47.4% 13%);
-    /* Slightly lighter than bg */
+    --card: hsl(226 50% 13%);
+    /* slightly lighter than bg */
     --card-foreground: hsl(210 40% 98%);
 
-    --popover: hsl(222.2 47.4% 11.2%);
+    --popover: hsl(226 50% 10%);
     --popover-foreground: hsl(210 40% 98%);
 
-    --primary: hsl(217.2 91.2% 59.8%);
+    --primary: hsl(212 100% 65%);
+    /* bright blue for accents */
     --primary-foreground: hsl(222.2 47.4% 11.2%);
 
-    --secondary: hsl(262.1 83.3% 57.8%);
+    --secondary: hsl(210 40% 20%);
+    /* muted blue for secondary actions */
     --secondary-foreground: hsl(210 40% 98%);
 
-    --muted: hsl(217.2 32.6% 17.5%);
-    --muted-foreground: hsl(215 20.2% 65.1%);
+    --muted: hsl(217 30% 18%);
+    --muted-foreground: hsl(215 20% 75%);
 
-    --accent: hsl(217.2 32.6% 17.5%);
+    --accent: hsl(217 30% 18%);
     --accent-foreground: hsl(210 40% 98%);
 
     --destructive: hsl(0 62.8% 30.6%);
     --destructive-foreground: hsl(210 40% 98%);
 
-    --border: hsl(217.2 32.6% 17.5%);
-    --input: hsl(217.2 32.6% 17.5%);
-    --ring: hsl(224.3 76.3% 48%);
+    --border: hsl(217 30% 18%);
+    --input: hsl(217 30% 18%);
+    --ring: hsl(212 100% 65%);
   }
 }
 

@@ -4,7 +4,7 @@ import { type StartQuizResponse, type EndQuizResponse, type AnswerDTO } from '@/
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { PlayCircle, ChevronLeft, ChevronRight, CheckCircle, XCircle, Trophy, Clock, ArrowLeft, LogOut } from 'lucide-react';
+import { PlayCircle, ChevronLeft, ChevronRight, CheckCircle, XCircle, Trophy, Clock, ArrowLeft } from 'lucide-react';
 import { useStartQuiz, useEndQuiz } from '@/hooks/useQuizProcess';
 import { useQuizzes } from '@/hooks/useQuizzes';
 import { Modal } from '@/components/ui/Modal';
@@ -12,7 +12,7 @@ import { Modal } from '@/components/ui/Modal';
 type QuizPhase = 'start' | 'quiz' | 'results';
 
 const QuizTestPage = () => {
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
 
     // Phase management
     const [phase, setPhase] = useState<QuizPhase>('start');
@@ -94,8 +94,8 @@ const QuizTestPage = () => {
                 handleCloseStartModal();
             },
             onError: (error: any) => {
-                const message = error.response?.data?.detail || error.response?.data?.message || 'Failed to start quiz. Check your PIN.';
-                setStartError(typeof message === 'string' ? message : 'Failed to start quiz.');
+                const message = error.response?.data?.detail || error.response?.data?.message || 'Testni boshlashda xatolik yuz berdi. PIN kodni tekshiring.';
+                setStartError(typeof message === 'string' ? message : 'Testni boshlashda xatolik.');
             }
         });
     };
@@ -133,7 +133,7 @@ const QuizTestPage = () => {
             },
             onError: (error) => {
                 console.error('Failed to submit quiz', error);
-                alert('Failed to submit quiz. Please try again.');
+                alert('Testni yuborishda xatolik yuz berdi. Iltimos qayta urinib ko\'ring.');
             }
         });
     }, [quizData, answers, user, endQuizMutation]);
@@ -158,14 +158,6 @@ const QuizTestPage = () => {
         return (
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Available Quizzes</h1>
-                        <p className="text-muted-foreground">Select a quiz to start</p>
-                    </div>
-                    <Button variant="danger" onClick={logout} size="sm">
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Logout
-                    </Button>
                 </div>
 
                 {isLoadingQuizzes ? (
@@ -178,8 +170,8 @@ const QuizTestPage = () => {
                             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
                                 <PlayCircle className="h-6 w-6 text-muted-foreground" />
                             </div>
-                            <h3 className="text-lg font-semibold">No Active Quizzes</h3>
-                            <p className="text-muted-foreground">There are currently no quizzes available to take.</p>
+                            <h3 className="text-lg font-semibold">Faol testlar mavjud emas</h3>
+                            <p className="text-muted-foreground">Hozircha ishlash uchun testlar yo'q.</p>
                         </CardContent>
                     </Card>
                 ) : (
@@ -193,11 +185,11 @@ const QuizTestPage = () => {
                                     <div className="flex flex-col gap-2 text-sm text-muted-foreground mb-4">
                                         <div className="flex items-center gap-2">
                                             <Trophy className="h-4 w-4" />
-                                            <span>{quiz.question_number} Questions</span>
+                                            <span>{quiz.question_number} ta savol</span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Clock className="h-4 w-4" />
-                                            <span>{quiz.duration} Minutes</span>
+                                            <span>{quiz.duration} daqiqa</span>
                                         </div>
                                     </div>
                                     <Button
@@ -205,7 +197,7 @@ const QuizTestPage = () => {
                                         className="w-full mt-auto"
                                     >
                                         <PlayCircle className="mr-2 h-4 w-4" />
-                                        Start Quiz
+                                        Testni boshlash
                                     </Button>
                                 </CardContent>
                             </Card>
@@ -216,15 +208,15 @@ const QuizTestPage = () => {
                 <Modal
                     isOpen={isModalOpen}
                     onClose={handleCloseStartModal}
-                    title={`Start Quiz: ${selectedQuiz?.title}`}
+                    title={`Testni boshlash: ${selectedQuiz?.title}`}
                 >
                     <div className="space-y-4">
                         <Input
-                            label="Enter PIN"
+                            label="PIN Kod"
                             type="text"
                             value={pin}
                             onChange={(e) => setPin(e.target.value)}
-                            placeholder="Enter the quiz PIN"
+                            placeholder="PIN kodni kiriting"
                             onKeyDown={(e) => e.key === 'Enter' && handleStartQuiz()}
                             autoFocus
                         />
@@ -235,13 +227,13 @@ const QuizTestPage = () => {
                         )}
                         <div className="flex justify-end gap-2">
                             <Button variant="outline" onClick={handleCloseStartModal}>
-                                Cancel
+                                Bekor qilish
                             </Button>
                             <Button
                                 onClick={handleStartQuiz}
                                 isLoading={startQuizMutation.isPending}
                             >
-                                Start
+                                Boshlash
                             </Button>
                         </div>
                     </div>
@@ -270,7 +262,7 @@ const QuizTestPage = () => {
                         <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
                             <Trophy className="h-10 w-10 text-primary" />
                         </div>
-                        <CardTitle className="text-2xl">Quiz Complete!</CardTitle>
+                        <CardTitle className="text-2xl">Test yakunlandi!</CardTitle>
                         <p className="text-muted-foreground mt-1">{quizData?.title}</p>
                     </CardHeader>
                     <CardContent>
@@ -286,28 +278,28 @@ const QuizTestPage = () => {
                             <div className="grid grid-cols-3 gap-4">
                                 <div className="rounded-lg bg-muted p-4 text-center">
                                     <div className="text-2xl font-bold">{results.total_questions}</div>
-                                    <div className="text-xs text-muted-foreground mt-1">Total</div>
+                                    <div className="text-xs text-muted-foreground mt-1">Jami</div>
                                 </div>
                                 <div className="rounded-lg bg-green-50 p-4 text-center">
                                     <div className="flex items-center justify-center gap-1">
                                         <CheckCircle className="h-4 w-4 text-green-600" />
                                         <span className="text-2xl font-bold text-green-600">{results.correct_answers}</span>
                                     </div>
-                                    <div className="text-xs text-muted-foreground mt-1">Correct</div>
+                                    <div className="text-xs text-muted-foreground mt-1">To'g'ri</div>
                                 </div>
                                 <div className="rounded-lg bg-red-50 p-4 text-center">
                                     <div className="flex items-center justify-center gap-1">
                                         <XCircle className="h-4 w-4 text-red-600" />
                                         <span className="text-2xl font-bold text-red-600">{results.wrong_answers}</span>
                                     </div>
-                                    <div className="text-xs text-muted-foreground mt-1">Wrong</div>
+                                    <div className="text-xs text-muted-foreground mt-1">Noto'g'ri</div>
                                 </div>
                             </div>
 
                             {/* Progress bar */}
                             <div className="space-y-2">
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Accuracy</span>
+                                    <span className="text-muted-foreground">Natija foizi</span>
                                     <span className="font-medium">{percentage}%</span>
                                 </div>
                                 <div className="h-3 w-full rounded-full bg-muted overflow-hidden">
@@ -320,7 +312,7 @@ const QuizTestPage = () => {
 
                             <Button className="w-full" onClick={handleRestart}>
                                 <ArrowLeft className="mr-2 h-4 w-4" />
-                                Take Another Quiz
+                                Boshqa test ishlash
                             </Button>
                         </div>
                     </CardContent>
@@ -357,7 +349,7 @@ const QuizTestPage = () => {
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">{quizData.title}</h1>
                     <p className="text-sm text-muted-foreground">
-                        Question {currentQuestionIndex + 1} of {totalQuestions} • {answeredCount} answered
+                        Savol: {currentQuestionIndex + 1} / {totalQuestions} • {answeredCount} javob berildi
                     </p>
                 </div>
                 <div className={`flex items-center gap-2 rounded-lg px-4 py-2 text-lg font-mono font-bold ${timeWarning ? 'bg-red-100 text-red-700 animate-pulse' : 'bg-muted'
@@ -440,7 +432,7 @@ const QuizTestPage = () => {
                     disabled={isFirstQuestion}
                 >
                     <ChevronLeft className="mr-2 h-4 w-4" />
-                    Previous
+                    Oldingi
                 </Button>
 
                 <div className="flex gap-2">
@@ -451,13 +443,13 @@ const QuizTestPage = () => {
                             disabled={answeredCount === 0}
                         >
                             <CheckCircle className="mr-2 h-4 w-4" />
-                            Submit Quiz ({answeredCount}/{totalQuestions})
+                            Testni yakunlash ({answeredCount}/{totalQuestions})
                         </Button>
                     ) : (
                         <Button
                             onClick={() => setCurrentQuestionIndex((prev) => prev + 1)}
                         >
-                            Next
+                            Keyingi
                             <ChevronRight className="ml-2 h-4 w-4" />
                         </Button>
                     )}

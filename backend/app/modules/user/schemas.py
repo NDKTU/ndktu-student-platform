@@ -62,6 +62,54 @@ class UserListRequest(BaseModel):
         return (self.page - 1) * self.limit
 
 
+class KafedraResponse(BaseModel):
+    id: int
+    name: str
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TeacherDetailResponse(BaseModel):
+    id: int
+    first_name: str
+    last_name: str
+    third_name: str
+    full_name: str
+    kafedra: KafedraResponse | None = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GroupResponse(BaseModel):
+    id: int
+    name: str
+    model_config = ConfigDict(from_attributes=True)
+
+
+class StudentDetailResponse(BaseModel):
+    id: int
+    first_name: str
+    last_name: str
+    third_name: str
+    full_name: str
+    image_path: str | None = None
+    group: GroupResponse | None = None
+    university: str | None = None
+    specialty: str | None = None
+    education_form: str | None = None
+    education_type: str | None = None
+    payment_form: str | None = None
+    education_lang: str | None = None
+    faculty: str | None = None
+    level: str | None = None
+    semester: str | None = None
+    address: str | None = None
+    avg_gpa: float | None = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserDetailResponse(UserCreateResponse):
+    teacher: TeacherDetailResponse | None = None
+    student: StudentDetailResponse | None = None
+
 class UserListResponse(BaseModel):
     total: int
     page: int

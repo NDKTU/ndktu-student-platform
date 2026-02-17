@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
     Users,
@@ -16,9 +17,17 @@ import {
 import { cn } from '@/utils/utils';
 import { useAuth } from '@/context/AuthContext';
 
-const Sidebar = () => {
+import logo from '@/assets/logo.png';
+
+interface SidebarProps {
+    mobileOpen: boolean;
+    setMobileOpen: (open: boolean) => void;
+}
+
+const Sidebar = ({ mobileOpen, setMobileOpen }: SidebarProps) => {
     const location = useLocation();
     const { user } = useAuth();
+    const [isCollapsed, setIsCollapsed] = useState(true);
 
     const isStudent = user?.roles?.some(role => role.name.toLowerCase() === 'student');
 
@@ -38,8 +47,8 @@ const Sidebar = () => {
     ];
 
     const studentNavigation = [
-        { name: 'Take Quiz', href: '/quiz-test', icon: PlayCircle },
-        { name: 'Results', href: '/results', icon: FileText },
+        { name: 'Test', href: '/quiz-test', icon: PlayCircle },
+        { name: 'Natija', href: '/results', icon: FileText },
     ];
 
     const navigation = isStudent
@@ -47,36 +56,69 @@ const Sidebar = () => {
         : [...basicNavigation, ...studentNavigation];
 
     return (
-        <div className="flex h-screen w-64 flex-col border-r bg-card transition-colors duration-300">
-            <div className="flex h-16 items-center border-b px-6">
-                <span className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                    NSUMT Admin
-                </span>
+        <>
+            {/* Mobile Overlay */}
+            {mobileOpen && (
+                <div 
+                    className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm md:hidden" 
+                    onClick={() => setMobileOpen(false)} 
+                />
+            )}
+
+            <div
+                className={cn(
+                    "fixed inset-y-0 left-0 z-50 flex h-screen flex-col border-r bg-card transition-all duration-300 md:static",
+                    mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+                    isCollapsed ? "w-20" : "w-64"
+                )}
+            >
+            <div 
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                className={cn(
+                    "flex h-16 items-center border-b px-4 cursor-pointer hover:bg-accent/50 transition-colors", 
+                    isCollapsed ? "justify-center" : "justify-start gap-4"
+                )}
+            >
+                <img 
+                    src={logo} 
+                    alt="Logo" 
+                    className="h-10 w-10 object-contain"
+                />
+                {!isCollapsed && (
+                    <span className="text-xs font-semibold leading-snug text-foreground">
+                        Navoiy davlat konchilik va texnologiyalar universiteti
+                    </span>
+                )}
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-4">
-                <nav className="space-y-1">
+            <div className="flex-1 overflow-y-auto py-4">
+                <nav className={cn("flex flex-col space-y-2 px-2", isCollapsed ? "items-center" : "")}>
                     {navigation.map((item) => {
                         const isActive = location.pathname === item.href;
                         return (
                             <Link
                                 key={item.name}
                                 to={item.href}
+                                title={isCollapsed ? item.name : undefined}
                                 className={cn(
-                                    "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-all duration-200",
+                                    "flex items-center rounded-md transition-all duration-200",
+                                    isCollapsed 
+                                        ? "h-10 w-10 justify-center p-0" 
+                                        : "px-3 py-2 text-sm font-medium",
                                     isActive
                                         ? "bg-primary text-primary-foreground shadow-md"
                                         : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                                 )}
                             >
-                                <item.icon className="mr-3 h-5 w-5" />
-                                {item.name}
+                                <item.icon className={cn("h-5 w-5", isCollapsed ? "mr-0" : "mr-3")} />
+                                {!isCollapsed && <span>{item.name}</span>}
                             </Link>
                         );
                     })}
                 </nav>
             </div>
         </div>
+        </>
     );
 };
 

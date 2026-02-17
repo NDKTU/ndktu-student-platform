@@ -123,8 +123,10 @@ async def init_db(app: FastAPI, session: AsyncSession):
         }
         if "read:role" in discovered_permissions:
             teacher_perms.add("read:role")
+        if "user:me" in discovered_permissions:
+            teacher_perms.add("user:me")
 
-        # Student gets read-only quiz/result + quiz process
+        # Student gets read-only quiz/result + quiz process + user:me
         student_perms = {
             p for p in discovered_permissions
             if (
@@ -134,12 +136,16 @@ async def init_db(app: FastAPI, session: AsyncSession):
                 or p == "user_answers:read"
             )
         }
+        if "user:me" in discovered_permissions:
+            student_perms.add("user:me")
+
+        user_perms = {"user:me"} if "user:me" in discovered_permissions else set()
 
         ROLE_PERMISSIONS_MAP = {
             "Admin": admin_perms,
             "Teacher": teacher_perms,
             "Student": student_perms,
-            "User": set(),
+            "User": user_perms,
         }
 
         for role_name, target_perm_names in ROLE_PERMISSIONS_MAP.items():
