@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Pagination } from '@/components/ui/Pagination';
-import { facultyService, type Faculty } from '@/services/facultyService';
 import { Button } from '@/components/ui/Button';
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/Table';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { Plus, Pencil, Trash2, Loader2, Search } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -13,9 +12,10 @@ import { Input } from '@/components/ui/Input';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { facultyService, type Faculty } from '@/services/facultyService';
 
 const facultySchema = z.object({
-    name: z.string().min(1, 'Faculty name is required'),
+    name: z.string().min(1, 'Fakultet nomi kiritilishi shart'),
 });
 
 type FacultyFormValues = z.infer<typeof facultySchema>;
@@ -69,7 +69,7 @@ const FacultyPage = () => {
             setIsDeleteModalOpen(false);
             setFacultyToDelete(null);
         } catch (error) {
-            console.error('Failed to delete faculty', error);
+            console.error('Fakultetni o\'chirishda xatolik', error);
         }
     };
 
@@ -88,16 +88,12 @@ const FacultyPage = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Faculties</h1>
-                    <p className="text-muted-foreground">Manage university faculties</p>
-                </div>
+            <div className="flex items-center justify-end">
                 <div className="flex gap-2">
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Search faculties..."
+                            placeholder="Fakultetlarni qidirish..."
                             className="pl-8 w-[250px]"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -105,12 +101,11 @@ const FacultyPage = () => {
                     </div>
                     <Button onClick={() => { setSelectedFaculty(null); setIsModalOpen(true); }}>
                         <Plus className="mr-2 h-4 w-4" />
-                        Add Faculty
+                        Fakultet qo'shish
                     </Button>
                 </div>
             </div>
             <Card>
-                <CardHeader><CardTitle>All Faculties</CardTitle></CardHeader>
                 <CardContent>
                     {isLoading ? (
                         <div className="flex justify-center p-8">
@@ -121,9 +116,9 @@ const FacultyPage = () => {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>ID</TableHead>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Created At</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead>Nomi</TableHead>
+                                    <TableHead>Yaratilgan sana</TableHead>
+                                    <TableHead className="text-right">Amallar</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -146,7 +141,7 @@ const FacultyPage = () => {
                                 ))}
                                 {faculties.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={4} className="text-center text-muted-foreground py-8">No faculties found.</TableCell>
+                                        <TableCell colSpan={4} className="text-center text-muted-foreground py-8">Fakultetlar topilmadi.</TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>
@@ -168,10 +163,10 @@ const FacultyPage = () => {
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={handleConfirmDelete}
-                title="Delete Faculty"
-                description={`Are you sure you want to delete the faculty "${facultyToDelete?.name}"? This action cannot be undone.`}
-                confirmText="Delete"
-                cancelText="Cancel"
+                title="Fakultetni o'chirish"
+                description={`Siz haqiqatan ham "${facultyToDelete?.name}" fakultetini o'chirmoqchimisiz? Bu amalni bekor qilib bo'lmaydi.`}
+                confirmText="O'chirish"
+                cancelText="Bekor qilish"
             />
         </div>
     );
@@ -199,18 +194,18 @@ const FacultyModal = ({ isOpen, onClose, faculty, onSuccess }: {
             }
             onSuccess(result);
         } catch (error) {
-            console.error('Failed to save faculty', error);
-            alert('Failed to save faculty');
+            console.error('Fakultetni saqlashda xatolik', error);
+            alert('Fakultetni saqlashda xatolik');
         }
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={faculty ? 'Edit Faculty' : 'Create Faculty'}>
+        <Modal isOpen={isOpen} onClose={onClose} title={faculty ? 'Fakultetni tahrirlash' : 'Fakultet yaratish'}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <Input label="Faculty Name" {...register('name')} error={errors.name?.message} placeholder="Enter faculty name" />
+                <Input label="Fakultet nomi" {...register('name')} error={errors.name?.message} placeholder="Fakultet nomini kiriting" />
                 <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button type="submit" isLoading={isSubmitting}>{faculty ? 'Update' : 'Create'}</Button>
+                    <Button type="button" variant="outline" onClick={onClose}>Bekor qilish</Button>
+                    <Button type="submit" isLoading={isSubmitting}>{faculty ? 'Yangilash' : 'Yaratish'}</Button>
                 </div>
             </form>
         </Modal>

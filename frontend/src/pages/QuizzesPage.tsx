@@ -13,7 +13,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/Table';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { Plus, Pencil, Trash2, Loader2, BookOpen, Search } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -135,11 +135,7 @@ const QuizzesPage = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Quizzes</h1>
-                    <p className="text-muted-foreground">Manage quizzes and tests</p>
-                </div>
+            <div className="flex items-center justify-end">
                 <div className="flex gap-2">
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -158,9 +154,7 @@ const QuizzesPage = () => {
             </div>
 
             <Card>
-                <CardHeader>
-                    <CardTitle>All Quizzes</CardTitle>
-                </CardHeader>
+
                 <CardContent>
                     {isQuizzesLoading ? (
                         <div className="flex justify-center p-8">

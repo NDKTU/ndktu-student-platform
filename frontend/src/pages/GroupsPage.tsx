@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/Table';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { Plus, Pencil, Trash2, Loader2, Search } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -77,16 +77,12 @@ const GroupsPage = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Groups</h1>
-                    <p className="text-muted-foreground">Manage student groups</p>
-                </div>
+            <div className="flex items-center justify-end">
                 <div className="flex gap-2">
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Search groups..."
+                            placeholder="Guruhlarni qidirish..."
                             className="pl-8 w-[250px]"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -94,12 +90,11 @@ const GroupsPage = () => {
                     </div>
                     <Button onClick={() => { setSelectedGroup(null); setIsModalOpen(true); }}>
                         <Plus className="mr-2 h-4 w-4" />
-                        Add Group
+                        Guruh qo'shish
                     </Button>
                 </div>
             </div>
             <Card>
-                <CardHeader><CardTitle>All Groups</CardTitle></CardHeader>
                 <CardContent>
                     {isGroupsLoading ? (
                         <div className="flex justify-center p-8">
@@ -110,10 +105,10 @@ const GroupsPage = () => {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>ID</TableHead>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Faculty</TableHead>
-                                    <TableHead>Created At</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead>Nomi</TableHead>
+                                    <TableHead>Fakultet</TableHead>
+                                    <TableHead>Yaratilgan sana</TableHead>
+                                    <TableHead className="text-right">Amallar</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -141,7 +136,7 @@ const GroupsPage = () => {
                                 ))}
                                 {groups.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">No groups found.</TableCell>
+                                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">Guruhlar topilmadi.</TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>
@@ -163,10 +158,10 @@ const GroupsPage = () => {
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={handleConfirmDelete}
-                title="Delete Group"
-                description={`Are you sure you want to delete the group "${groupToDelete?.name}"? This action cannot be undone.`}
-                confirmText="Delete"
-                cancelText="Cancel"
+                title="Guruhni o'chirish"
+                description={`Siz haqiqatan ham "${groupToDelete?.name}" guruhini o'chirmoqchimisiz? Bu amalni bekor qilib bo'lmaydi.`}
+                confirmText="O'chirish"
+                cancelText="Bekor qilish"
             />
         </div>
     );
@@ -198,28 +193,28 @@ const GroupModal = ({ isOpen, onClose, group, faculties, onSuccess }: {
         if (group) {
             updateMutation.mutate({ id: group.id, data }, {
                 onSuccess: (data) => onSuccess(data),
-                onError: () => alert('Failed to update group'),
+                onError: () => alert('Guruhni yangilashda xatolik'),
             });
         } else {
             createMutation.mutate(data, {
                 onSuccess: (data) => onSuccess(data),
-                onError: () => alert('Failed to create group'),
+                onError: () => alert('Guruh yaratishda xatolik'),
             });
         }
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={group ? 'Edit Group' : 'Create Group'}>
+        <Modal isOpen={isOpen} onClose={onClose} title={group ? 'Guruhni tahrirlash' : 'Guruh yaratish'}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <Input label="Group Name" {...register('name')} error={errors.name?.message} placeholder="Enter group name" />
+                <Input label="Guruh nomi" {...register('name')} error={errors.name?.message} placeholder="Guruh nomini kiriting" />
                 <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">Faculty</label>
+                    <label className="text-sm font-medium text-foreground">Fakultet</label>
                     <select
                         value={selectedFacultyId}
                         onChange={(e) => setValue('faculty_id', Number(e.target.value))}
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
-                        <option value={0}>Select a faculty...</option>
+                        <option value={0}>Fakultetni tanlang...</option>
                         {faculties.map((faculty) => (
                             <option key={faculty.id} value={faculty.id}>{faculty.name}</option>
                         ))}
@@ -229,8 +224,8 @@ const GroupModal = ({ isOpen, onClose, group, faculties, onSuccess }: {
                     )}
                 </div>
                 <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button type="submit" isLoading={isSubmitting}>{group ? 'Update' : 'Create'}</Button>
+                    <Button type="button" variant="outline" onClick={onClose}>Bekor qilish</Button>
+                    <Button type="submit" isLoading={isSubmitting}>{group ? 'Yangilash' : 'Yaratish'}</Button>
                 </div>
             </form>
         </Modal>

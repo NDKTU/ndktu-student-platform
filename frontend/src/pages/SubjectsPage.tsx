@@ -11,8 +11,8 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/Table';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { Plus, Pencil, Trash2, Loader2, BookOpen, Search } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/Card';
+import { Plus, Pencil, Trash2, Loader2, Search } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { useForm } from 'react-hook-form';
@@ -66,22 +66,18 @@ const SubjectsPage = () => {
         });
     };
 
-    const handleSuccess = () => {
+    const handleSuccess = (_savedSubject?: Subject) => {
         setIsModalOpen(false);
     };
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Subjects</h1>
-                    <p className="text-muted-foreground">Manage subjects</p>
-                </div>
+            <div className="flex items-center justify-end">
                 <div className="flex gap-2">
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Search subjects..."
+                            placeholder="Fanlarni qidirish..."
                             className="pl-8 w-[250px]"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -89,33 +85,25 @@ const SubjectsPage = () => {
                     </div>
                     <Button onClick={() => { setSelectedSubject(null); setIsModalOpen(true); }}>
                         <Plus className="mr-2 h-4 w-4" />
-                        Add Subject
+                        Fan qo'shish
                     </Button>
                 </div>
             </div>
 
             <Card>
-                <CardHeader>
-                    <CardTitle>All Subjects</CardTitle>
-                </CardHeader>
                 <CardContent>
                     {isSubjectsLoading ? (
                         <div className="flex justify-center p-8">
                             <Loader2 className="h-8 w-8 animate-spin" />
-                        </div>
-                    ) : subjects.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                            <BookOpen className="h-12 w-12 mb-4 opacity-20" />
-                            <p>No subjects found.</p>
                         </div>
                     ) : (
                         <Table>
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>ID</TableHead>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Created At</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead>Nomi</TableHead>
+                                    <TableHead>Yaratilgan sana</TableHead>
+                                    <TableHead className="text-right">Amallar</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -145,6 +133,11 @@ const SubjectsPage = () => {
                                         </TableCell>
                                     </TableRow>
                                 ))}
+                                {subjects.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={4} className="text-center text-muted-foreground py-8">Fanlar topilmadi.</TableCell>
+                                    </TableRow>
+                                )}
                             </TableBody>
                         </Table>
                     )}
@@ -169,10 +162,10 @@ const SubjectsPage = () => {
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={handleConfirmDelete}
-                title="Delete Subject"
-                description={`Are you sure you want to delete '${subjectToDelete?.name}'? This action cannot be undone.`}
-                confirmText="Delete"
-                cancelText="Cancel"
+                title="Fanni o'chirish"
+                description={`Siz haqiqatan ham "${subjectToDelete?.name}" fanini o'chirmoqchimisiz? Bu amalni bekor qilib bo'lmaydi.`}
+                confirmText="O'chirish"
+                cancelText="Bekor qilish"
             />
         </div>
     );
@@ -196,6 +189,7 @@ const SubjectModal = ({
         formState: { errors },
     } = useForm<SubjectFormValues>({
         resolver: zodResolver(subjectSchema),
+        defaultValues: { name: '' },
     });
 
     const createMutation = useCreateSubject();
@@ -218,18 +212,12 @@ const SubjectModal = ({
         if (subject) {
             updateMutation.mutate({ id: subject.id, data }, {
                 onSuccess: (data) => onSuccess(data),
-                onError: (error) => {
-                    console.error('Failed to update subject', error);
-                    alert('Failed to update subject');
-                }
+                onError: () => alert('Fanni yangilashda xatolik'),
             });
         } else {
             createMutation.mutate(data, {
                 onSuccess: (data) => onSuccess(data),
-                onError: (error) => {
-                    console.error('Failed to create subject', error);
-                    alert('Failed to create subject');
-                }
+                onError: () => alert('Fan yaratishda xatolik'),
             });
         }
     };
@@ -238,22 +226,22 @@ const SubjectModal = ({
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title={subject ? 'Edit Subject' : 'Create Subject'}
+            title={subject ? 'Fanni tahrirlash' : 'Fan yaratish'}
         >
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <Input
-                    label="Subject Name"
+                    label="Fan nomi"
                     {...register('name')}
                     error={errors.name?.message}
-                    placeholder="Enter subject name"
+                    placeholder="Fan nomini kiriting"
                 />
 
                 <div className="flex justify-end gap-2 pt-4">
                     <Button type="button" variant="outline" onClick={onClose}>
-                        Cancel
+                        Bekor qilish
                     </Button>
                     <Button type="submit" isLoading={isSubmitting}>
-                        {subject ? 'Update' : 'Create'}
+                        {subject ? 'Yangilash' : 'Yaratish'}
                     </Button>
                 </div>
             </form>

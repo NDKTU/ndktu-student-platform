@@ -30,8 +30,9 @@ const Sidebar = ({ mobileOpen, setMobileOpen }: SidebarProps) => {
     const [isCollapsed, setIsCollapsed] = useState(true);
 
     const isStudent = user?.roles?.some(role => role.name.toLowerCase() === 'student');
+    const isTeacher = user?.roles?.some(role => role.name.toLowerCase() === 'teacher');
 
-    const basicNavigation = [
+    const adminNavigation = [
         { name: 'Dashboard', href: '/', icon: BarChart },
         { name: 'Users', href: '/users', icon: Users },
         { name: 'Teachers', href: '/teachers', icon: GraduationCap },
@@ -44,16 +45,27 @@ const Sidebar = ({ mobileOpen, setMobileOpen }: SidebarProps) => {
         { name: 'Subjects', href: '/subjects', icon: BookOpen },
         { name: 'Questions', href: '/questions', icon: FileQuestion },
         { name: 'Quizzes', href: '/quizzes', icon: BookOpen },
+        { name: 'Test', href: '/quiz-test', icon: PlayCircle },
+        { name: 'Natijalar', href: '/results', icon: FileText },
+    ];
+
+    const teacherNavigation = [
+        { name: 'Dashboard', href: '/', icon: BarChart },
+        { name: 'Subjects', href: '/subjects', icon: BookOpen },
+        { name: 'Questions', href: '/questions', icon: FileQuestion },
+        { name: 'Quizzes', href: '/quizzes', icon: BookOpen },
     ];
 
     const studentNavigation = [
         { name: 'Test', href: '/quiz-test', icon: PlayCircle },
-        { name: 'Natija', href: '/results', icon: FileText },
+        { name: 'Natijalar', href: '/results', icon: FileText },
     ];
 
     const navigation = isStudent
         ? studentNavigation
-        : [...basicNavigation, ...studentNavigation];
+        : isTeacher
+            ? teacherNavigation
+            : adminNavigation;
 
     return (
         <>
@@ -75,17 +87,21 @@ const Sidebar = ({ mobileOpen, setMobileOpen }: SidebarProps) => {
             <div 
                 onClick={() => setIsCollapsed(!isCollapsed)}
                 className={cn(
-                    "flex h-16 items-center border-b px-4 cursor-pointer hover:bg-accent/50 transition-colors", 
-                    isCollapsed ? "justify-center" : "justify-start gap-4"
+                    "flex h-16 items-center border-b px-4 cursor-pointer transition-all duration-300", 
+                    "hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent",
+                    isCollapsed ? "justify-center" : "justify-start gap-3"
                 )}
             >
                 <img 
                     src={logo} 
-                    alt="Logo" 
-                    className="h-10 w-10 object-contain"
+                    alt="NDKTU Logo" 
+                    className={cn(
+                        "object-contain shrink-0 transition-all duration-300 drop-shadow-sm",
+                        isCollapsed ? "h-10 w-10" : "h-11 w-11"
+                    )}
                 />
                 {!isCollapsed && (
-                    <span className="text-xs font-semibold leading-snug text-foreground">
+                    <span className="text-xs font-bold leading-tight tracking-tight text-foreground/90">
                         Navoiy davlat konchilik va texnologiyalar universiteti
                     </span>
                 )}

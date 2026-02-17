@@ -34,12 +34,29 @@ const ProtectedRoute = () => {
   return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
 };
 
+const RoleRoute = ({ allowedRoles, children }: { allowedRoles: string[]; children: React.ReactElement }) => {
+  const { user } = useAuth();
+  const userRoles = user?.roles?.map(r => r.name.toLowerCase()) || [];
+  const hasAccess = allowedRoles.some(role => userRoles.includes(role));
+
+  if (!hasAccess) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
+
 const DashboardRedirect = () => {
   const { user } = useAuth();
   const isStudent = user?.roles?.some(role => role.name.toLowerCase() === 'student');
+  const isTeacher = user?.roles?.some(role => role.name.toLowerCase() === 'teacher');
 
   if (isStudent) {
     return <Navigate to="/quiz-test" replace />;
+  }
+
+  if (isTeacher) {
+    return <Navigate to="/questions" replace />;
   }
 
   return <Dashboard />;
@@ -56,25 +73,29 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route element={<MainLayout />}>
                 <Route path="/" element={<DashboardRedirect />} />
-                <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<ProfilePage />} />
-                <Route path="/users" element={<UsersPage />} />
-                <Route path="/teachers" element={<TeachersPage />} />
-                <Route path="/subjects" element={<SubjectsPage />} />
 
-                <Route path="/quiz-test" element={<QuizTestPage />} />
-                <Route path="/results" element={<ResultsPage />} />
+                {/* Admin-only routes */}
+                <Route path="/dashboard" element={<RoleRoute allowedRoles={['admin']}><Dashboard /></RoleRoute>} />
+                <Route path="/users" element={<RoleRoute allowedRoles={['admin']}><UsersPage /></RoleRoute>} />
+                <Route path="/teachers" element={<RoleRoute allowedRoles={['admin']}><TeachersPage /></RoleRoute>} />
+                <Route path="/roles" element={<RoleRoute allowedRoles={['admin']}><RolesPage /></RoleRoute>} />
+                <Route path="/permissions" element={<RoleRoute allowedRoles={['admin']}><PermissionsPage /></RoleRoute>} />
+                <Route path="/faculties" element={<RoleRoute allowedRoles={['admin']}><FacultyPage /></RoleRoute>} />
+                <Route path="/kafedras" element={<RoleRoute allowedRoles={['admin']}><KafedraPage /></RoleRoute>} />
+                <Route path="/groups" element={<RoleRoute allowedRoles={['admin']}><GroupsPage /></RoleRoute>} />
+                <Route path="/students" element={<RoleRoute allowedRoles={['admin']}><StudentsPage /></RoleRoute>} />
 
-                <Route path="/roles" element={<RolesPage />} />
-                <Route path="/permissions" element={<PermissionsPage />} />
-                <Route path="/faculties" element={<FacultyPage />} />
-                <Route path="/kafedras" element={<KafedraPage />} />
-                <Route path="/groups" element={<GroupsPage />} />
-                <Route path="/students" element={<StudentsPage />} />
-                <Route path="/questions" element={<QuestionsPage />} />
-                <Route path="/questions/create" element={<QuestionFormPage />} />
-                <Route path="/questions/:id/edit" element={<QuestionFormPage />} />
-                <Route path="/quizzes" element={<QuizzesPage />} />
+                {/* Admin + Teacher routes */}
+                <Route path="/subjects" element={<RoleRoute allowedRoles={['admin', 'teacher']}><SubjectsPage /></RoleRoute>} />
+                <Route path="/questions" element={<RoleRoute allowedRoles={['admin', 'teacher']}><QuestionsPage /></RoleRoute>} />
+                <Route path="/questions/create" element={<RoleRoute allowedRoles={['admin', 'teacher']}><QuestionFormPage /></RoleRoute>} />
+                <Route path="/questions/:id/edit" element={<RoleRoute allowedRoles={['admin', 'teacher']}><QuestionFormPage /></RoleRoute>} />
+                <Route path="/quizzes" element={<RoleRoute allowedRoles={['admin', 'teacher']}><QuizzesPage /></RoleRoute>} />
+
+                {/* Admin + Student routes */}
+                <Route path="/quiz-test" element={<RoleRoute allowedRoles={['admin', 'student']}><QuizTestPage /></RoleRoute>} />
+                <Route path="/results" element={<RoleRoute allowedRoles={['admin', 'student']}><ResultsPage /></RoleRoute>} />
               </Route>
             </Route>
 

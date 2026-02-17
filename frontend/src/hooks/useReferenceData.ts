@@ -22,6 +22,26 @@ export const useCreateFaculty = () => {
     });
 };
 
+export const useUpdateFaculty = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: number; data: { name: string } }) => facultyService.updateFaculty(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['faculties'] });
+        },
+    });
+};
+
+export const useDeleteFaculty = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: number) => facultyService.deleteFaculty(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['faculties'] });
+        },
+    });
+};
+
 // Kafedras
 export const useKafedras = (page = 1, limit = 100, name?: string) => {
     return useQuery({
@@ -34,6 +54,26 @@ export const useCreateKafedra = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: (data: { name: string; faculty_id: number }) => kafedraService.createKafedra(data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['kafedras'] });
+        },
+    });
+};
+
+export const useUpdateKafedra = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: number; data: { name: string; faculty_id: number } }) => kafedraService.updateKafedra(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['kafedras'] });
+        },
+    });
+};
+
+export const useDeleteKafedra = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: number) => kafedraService.deleteKafedra(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['kafedras'] });
         },

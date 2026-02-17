@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/Table';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { Plus, Pencil, Trash2, Loader2, Search } from 'lucide-react';
 
 import { Modal } from '@/components/ui/Modal';
@@ -89,11 +89,7 @@ const PermissionsPage = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Permissions</h1>
-                    <p className="text-muted-foreground">Manage system permissions</p>
-                </div>
+            <div className="flex items-center justify-end">
                 <div className="flex gap-2">
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -111,7 +107,6 @@ const PermissionsPage = () => {
                 </div>
             </div>
             <Card>
-                <CardHeader><CardTitle>All Permissions</CardTitle></CardHeader>
                 <CardContent>
                     {isLoading ? (
                         <div className="flex justify-center p-8">

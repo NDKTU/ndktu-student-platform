@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import type { QuestionCreateRequest } from '@/services/questionService';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import JoditEditor from 'jodit-react';
 import { useForm, Controller } from 'react-hook-form';
@@ -117,16 +117,10 @@ const QuestionFormPage = () => {
                 <Button variant="ghost" size="sm" onClick={() => navigate('/questions')}>
                     <ArrowLeft className="h-4 w-4" />
                 </Button>
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">{isEditMode ? 'Edit Question' : 'Create Question'}</h1>
-                </div>
             </div>
 
             <Card>
-                <CardHeader>
-                    <CardTitle>Question Details</CardTitle>
-                </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                         <div className="grid grid-cols-1 gap-4">
                             <div className="space-y-2">

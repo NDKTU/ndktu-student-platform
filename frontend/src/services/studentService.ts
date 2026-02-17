@@ -8,6 +8,23 @@ export interface Student {
     third_name: string;
     full_name: string;
     group_id: number;
+    student_id_number: string | null;
+    image_path: string | null;
+    birth_date: string | null;
+    phone: string | null;
+    gender: string | null;
+    university: string | null;
+    specialty: string | null;
+    student_status: string | null;
+    education_form: string | null;
+    education_type: string | null;
+    payment_form: string | null;
+    education_lang: string | null;
+    faculty: string | null;
+    level: string | null;
+    semester: string | null;
+    address: string | null;
+    avg_gpa: number | null;
     created_at: string;
     updated_at: string;
 }

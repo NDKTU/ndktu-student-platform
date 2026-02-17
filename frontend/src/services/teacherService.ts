@@ -8,6 +8,15 @@ export interface Teacher {
     third_name: string;
     full_name: string;
     kafedra_id: number;
+    kafedra?: {
+        id: number;
+        name: string;
+        faculty_id?: number;
+    };
+    user?: {
+        id: number;
+        username: string;
+    };
     created_at: string;
     updated_at: string;
 }

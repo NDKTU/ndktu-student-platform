@@ -122,9 +122,9 @@ const Dashboard = () => {
 
     const getGreeting = () => {
         const hour = new Date().getHours();
-        if (hour < 12) return 'Good Morning';
-        if (hour < 18) return 'Good Afternoon';
-        return 'Good Evening';
+        if (hour < 12) return 'Xayrli tong';
+        if (hour < 18) return 'Xayrli kun';
+        return 'Xayrli kech';
     };
 
     return (
@@ -136,76 +136,76 @@ const Dashboard = () => {
                         {getGreeting()}, {user?.username}
                     </h1>
                     <p className="text-muted-foreground text-lg">
-                        Here's what's happening in your university system today.
+                        Universitet tizimidagi bugungi yangiliklar va ko'rsatkichlar.
                     </p>
                 </div>
                 <Button variant="danger" onClick={logout} className="shadow-lg hover:shadow-xl transition-all">
                     <LogOut className="mr-2 h-4 w-4" />
-                    Logout
+                    Chiqish
                 </Button>
             </div>
 
             {/* Quick Stats Grid */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 <StatCard
-                    label="Active Users"
+                    label="Faol foydalanuvchilar"
                     value={users?.total || 0}
                     icon={Users}
                     isLoading={isUsersLoading}
                     color="blue"
-                    description="+12% from last month"
+                    description="O'tgan oyga nisbatan +12%"
                 />
                 <StatCard
-                    label="Total Students"
+                    label="Jami talabalar"
                     value={students?.total || 0}
                     icon={UserCheck}
                     isLoading={isStudentsLoading}
                     color="purple"
-                    description="Active enrollment"
+                    description="Faol o'qiyotganlar"
                 />
                 <StatCard
-                    label="Faculty Members"
+                    label="O'qituvchilar"
                     value={teachers?.total || 0}
                     icon={GraduationCap}
                     isLoading={isTeachersLoading}
                     color="cyan"
-                    description="Across all departments"
+                    description="Barcha kafedralar bo'yicha"
                 />
                 <StatCard
-                    label="Active Quizzes"
+                    label="Faol testlar"
                     value={quizzes?.total || 0}
                     icon={BookOpen}
                     isLoading={isQuizzesLoading}
                     color="pink"
-                    description="Available for students"
+                    description="Talabalar uchun ochiq"
                 />
             </div>
 
             {/* Secondary Stats Grid */}
             <div className="grid gap-6 md:grid-cols-3">
                 <StatCard
-                    label="Question Bank"
+                    label="Savollar banki"
                     value={questions?.total || 0}
                     icon={FileQuestion}
                     isLoading={isQuestionsLoading}
                     color="orange"
-                    description="Total questions database"
+                    description="Jami savollar bazasi"
                 />
                 <StatCard
-                    label="Subjects Taught"
+                    label="Yaratilgan fanlar"
                     value={subjects?.total || 0}
                     icon={Book}
                     isLoading={isSubjectsLoading}
                     color="green"
-                    description="Active courses"
+                    description="Faol kurslar"
                 />
                 <StatCard
-                    label="Tests Completed"
+                    label="Yakunlangan testlar"
                     value={results?.total || 0}
                     icon={CheckCircle}
                     isLoading={isResultsLoading}
                     color="blue"
-                    description="All time submissions"
+                    description="Jami topshirilganlar"
                 />
             </div>
 
@@ -214,22 +214,22 @@ const Dashboard = () => {
                 <div className="rounded-2xl border bg-card p-6 shadow-sm">
                     <div className="flex items-center gap-2 mb-6">
                         <Activity className="h-5 w-5 text-primary" />
-                        <h2 className="text-xl font-semibold">System Status</h2>
+                        <h2 className="text-xl font-semibold">Tizim holati</h2>
                     </div>
                     <div className="space-y-4">
                         <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
                             <div className="flex items-center gap-3">
                                 <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                                <span className="font-medium">Database Connection</span>
+                                <span className="font-medium">Ma'lumotlar bazasi aloqasi</span>
                             </div>
-                            <span className="text-sm text-green-600 font-medium">Stable</span>
+                            <span className="text-sm text-green-600 font-medium">Barqaror</span>
                         </div>
                         <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
                             <div className="flex items-center gap-3">
                                 <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                                <span className="font-medium">API Gateway</span>
+                                <span className="font-medium">API tarmoq shlyuzi</span>
                             </div>
-                            <span className="text-sm text-green-600 font-medium">Operational</span>
+                            <span className="text-sm text-green-600 font-medium">Ishlamoqda</span>
                         </div>
                     </div>
                 </div>
@@ -238,8 +238,8 @@ const Dashboard = () => {
                     <div className="rounded-full bg-primary/10 p-4 mb-4">
                         <GraduationCap className="h-8 w-8 text-primary" />
                     </div>
-                    <h2 className="text-xl font-semibold mb-2">Academic Excellence</h2>
-                    <p className="text-muted-foreground">Manage your institution's academic resources efficiently with our comprehensive dashboard.</p>
+                    <h2 className="text-xl font-semibold mb-2">Akademik mukammallik</h2>
+                    <p className="text-muted-foreground">Kengaytirilgan boshqaruv paneli orqali muassasangizning akademik resurslarini samarali boshqaring.</p>
                 </div>
             </div>
         </div>
