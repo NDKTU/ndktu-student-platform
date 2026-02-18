@@ -32,6 +32,10 @@ class HemisLoginService:
                  access_token = auth_service.create_access_token({"user_id": user.id})
                  refresh_token = auth_service.create_refresh_token({"user_id": user.id})
                  return HemisLoginResponse(access_token=access_token, refresh_token=refresh_token)
+             else:
+                 logger.warning(f"Local login failed for user {data.login} (password mismatch), attempting Hemis fallback.")
+        else:
+             logger.info(f"User {data.login} not found locally or has no password, attempting Hemis login.")
         
         # 2. If not found or invalid password, request Hemis
         return await self.request_to_hemis(session, data)
@@ -121,8 +125,10 @@ class HemisLoginService:
             if student_role:
                 user.roles.append(student_role)
             session.add(user)
+            logger.info(f"Created new user {username} from Hemis data")
         else:
             user.password = hashed_pw # Update password
+            logger.info(f"Updated password for user {username} from Hemis login")
             # Update role
             if student_role and student_role not in user.roles:
                 user.roles.append(student_role)

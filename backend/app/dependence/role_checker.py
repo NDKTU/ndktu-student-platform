@@ -92,7 +92,7 @@ class PermissionRequired:
             .where(UserRole.user_id == user_id, Permission.name == self.permission_name)
         )
         perm_check_result = await session.execute(perm_check_stmt)
-        has_permission = perm_check_result.scalar_one_or_none()
+        has_permission = perm_check_result.scalars().first()
 
         if not has_permission:
             raise HTTPException(

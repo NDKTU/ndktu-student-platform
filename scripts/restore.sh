@@ -64,3 +64,26 @@ docker exec -i "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -c \
     "SELECT schemaname, relname AS table, n_live_tup AS rows 
      FROM pg_stat_user_tables 
      ORDER BY relname;" 2>/dev/null
+
+
+echo "🏷️  Stamping database with current migration head..."
+
+# 1. Update the path to point to 'backend/app' where alembic.ini is located
+ALEMBIC_DIR="$(dirname "$SCRIPT_DIR")/backend/app"
+
+if [ -d "$ALEMBIC_DIR" ]; then
+    echo "📂 Changing directory to: $ALEMBIC_DIR"
+    cd "$ALEMBIC_DIR"
+    
+    # 2. OVERRIDE the database URL to use localhost just for this command
+    #    (Keep your .env file as 'database:5432' for Docker)
+    export APP_CONFIG__DATABASE__URL="postgresql+asyncpg://bekzod:admin123@localhost:5436/basic_database"
+
+    # 3. Run stamp
+    alembic stamp head
+    
+    echo "✅ Stamp complete!"
+else
+    echo "❌ Could not find alembic directory at $ALEMBIC_DIR"
+    exit 1
+fi

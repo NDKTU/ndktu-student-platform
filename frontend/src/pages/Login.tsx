@@ -10,13 +10,13 @@ import api from '@/services/api';
 import { hemisService } from '@/services/hemisService';
 
 const staffLoginSchema = z.object({
-    username: z.string().min(1, 'Username is required'),
-    password: z.string().min(1, 'Password is required'),
+    username: z.string().min(1, 'Foydalanuvchi nomi kiritilishi shart'),
+    password: z.string().min(1, 'Parol kiritilishi shart'),
 });
 
 const studentLoginSchema = z.object({
-    login: z.string().min(1, 'Login/Student ID is required'),
-    password: z.string().min(1, 'Password is required'),
+    login: z.string().min(1, 'Login/Talaba ID kiritilishi shart'),
+    password: z.string().min(1, 'Parol kiritilishi shart'),
 });
 
 type StaffLoginFormValues = z.infer<typeof staffLoginSchema>;
@@ -58,9 +58,9 @@ export const Login: React.FC = () => {
         } catch (err: any) {
             console.error(err);
             if (err.response?.status === 401 || err.response?.status === 400) {
-                setError('Invalid username or password');
+                setError('Login yoki parol noto\'g\'ri');
             } else {
-                setError('Something went wrong. Please try again.');
+                setError('Xatolik yuz berdi. Qaytadan urinib ko\'ring.');
             }
         }
     };
@@ -73,13 +73,13 @@ export const Login: React.FC = () => {
             navigate(from, { replace: true });
         } catch (err: any) {
             console.error(err);
-             if (err.response?.status === 401 || err.response?.status === 400 || err.response?.status === 404) {
-                setError('Invalid credentials or student not found.');
+            if (err.response?.status === 401 || err.response?.status === 400 || err.response?.status === 404) {
+                setError('Ma\'lumotlar noto\'g\'ri yoki talaba topilmadi.');
             } else if (err.response?.status === 429) {
-                 setError('Too many login attempts. Please try again later.');
+                setError('Urinishlar soni ko\'p. Keyinroq urinib ko\'ring.');
             }
             else {
-                setError('Something went wrong. Please try again.');
+                setError('Xatolik yuz berdi. Qaytadan urinib ko\'ring.');
             }
         }
     };
@@ -96,10 +96,10 @@ export const Login: React.FC = () => {
             <div className="w-full max-w-md space-y-8 bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
                 <div className="text-center">
                     <h2 className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-white">
-                        Sign in to your account
+                        Tizimga kirish
                     </h2>
                     <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                        Select your login method below.
+                        Quyida kirish usulini tanlang.
                     </p>
                 </div>
 
@@ -107,24 +107,22 @@ export const Login: React.FC = () => {
                     <button
                         type="button"
                         onClick={() => toggleLoginType('staff')}
-                        className={`flex-1 rounded-sm px-3 py-1.5 text-sm font-medium transition-all ${
-                            loginType === 'staff'
+                        className={`flex-1 rounded-sm px-3 py-1.5 text-sm font-medium transition-all ${loginType === 'staff'
                                 ? 'bg-white text-primary shadow-sm ring-1 ring-gray-200'
                                 : 'text-gray-500 hover:text-gray-900'
-                        }`}
+                            }`}
                     >
-                        Staff Login
+                        Xodimlar
                     </button>
                     <button
                         type="button"
                         onClick={() => toggleLoginType('student')}
-                        className={`flex-1 rounded-sm px-3 py-1.5 text-sm font-medium transition-all ${
-                            loginType === 'student'
+                        className={`flex-1 rounded-sm px-3 py-1.5 text-sm font-medium transition-all ${loginType === 'student'
                                 ? 'bg-white text-primary shadow-sm ring-1 ring-gray-200'
                                 : 'text-gray-500 hover:text-gray-900'
-                        }`}
+                            }`}
                     >
-                        Student Login (Hemis)
+                        Talabalar (Hemis)
                     </button>
                 </div>
 
@@ -138,7 +136,7 @@ export const Login: React.FC = () => {
                     <form className="mt-8 space-y-6" onSubmit={handleSubmitStaff(onStaffSubmit)}>
                         <div className="space-y-4">
                             <Input
-                                label="Username"
+                                label="Foydalanuvchi nomi"
                                 type="text"
                                 autoComplete="username"
                                 error={errorsStaff.username?.message?.toString()}
@@ -146,7 +144,7 @@ export const Login: React.FC = () => {
                             />
 
                             <Input
-                                label="Password"
+                                label="Parol"
                                 type="password"
                                 autoComplete="current-password"
                                 error={errorsStaff.password?.message?.toString()}
@@ -160,7 +158,7 @@ export const Login: React.FC = () => {
                                 className="w-full"
                                 isLoading={isSubmittingStaff}
                             >
-                                Sign in as Staff
+                                Kirish
                             </Button>
                         </div>
                     </form>
@@ -168,7 +166,7 @@ export const Login: React.FC = () => {
                     <form className="mt-8 space-y-6" onSubmit={handleSubmitStudent(onStudentSubmit)}>
                         <div className="space-y-4">
                             <Input
-                                label="Student ID / Login"
+                                label="Talaba ID / Login"
                                 type="text"
                                 autoComplete="username"
                                 error={errorsStudent.login?.message?.toString()}
@@ -176,7 +174,7 @@ export const Login: React.FC = () => {
                             />
 
                             <Input
-                                label="Password"
+                                label="Parol"
                                 type="password"
                                 autoComplete="current-password"
                                 error={errorsStudent.password?.message?.toString()}
@@ -190,7 +188,7 @@ export const Login: React.FC = () => {
                                 className="w-full"
                                 isLoading={isSubmittingStudent}
                             >
-                                Sign in with Hemis
+                                Hemis orqali kirish
                             </Button>
                         </div>
                     </form>
