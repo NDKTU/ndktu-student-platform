@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import HTTPException, status
 from app.models.role.model import Role
 from app.models.permission.model import Permission
@@ -7,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from .schemas import RoleCreateRequest, RoleListRequest, RoleListResponse, RolePermissionAssignRequest
+
+logger = logging.getLogger(__name__)
 
 
 class RoleRepository:
@@ -160,6 +164,10 @@ class RoleRepository:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Database error while assigning permissions"
             )
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 get_role_repository = RoleRepository()

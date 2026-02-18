@@ -1,3 +1,5 @@
+import logging
+
 from core.db_helper import db_helper
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +19,8 @@ from app.modules.result.router import list_results
 
 # Note: Permissions might be needed but usually taking a quiz is open to students?
 # For now, keeping it open or simple. If auth is needed, Dependencies can be added.
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     tags=["Quiz Process"],

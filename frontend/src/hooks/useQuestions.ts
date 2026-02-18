@@ -57,3 +57,9 @@ export const useUploadQuestions = () => {
         },
     });
 };
+
+export const useUploadImage = () => {
+    return useMutation({
+        mutationFn: (file: File) => questionService.uploadImage(file),
+    });
+};

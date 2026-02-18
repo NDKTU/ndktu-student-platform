@@ -41,3 +41,5 @@ frontend/logs/
 backend/.env
 
 backend/*.egg-info/
+backups/
+backend/uploads/

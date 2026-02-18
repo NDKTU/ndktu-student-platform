@@ -1,3 +1,5 @@
+import logging
+
 import jwt
 from core.config import settings
 from core.db_helper import db_helper
@@ -12,6 +14,8 @@ from app.models.user_role.model import UserRole
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+
+logger = logging.getLogger(__name__)
 
 # Используем заголовок Authorization
 api_key_header = APIKeyHeader(name="Authorization")

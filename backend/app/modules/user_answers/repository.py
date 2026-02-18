@@ -1,7 +1,11 @@
+import logging
+
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user_answers.model import UserAnswers
 from .schemas import UserAnswersListRequest
+
+logger = logging.getLogger(__name__)
 
 class UserAnswersRepository:
     async def get_all(

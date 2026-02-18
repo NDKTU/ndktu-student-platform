@@ -1,8 +1,12 @@
+import logging
+
 from app.models.student.model import Student
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .repository import student_repository
 from .schemas import StudentCreateRequest, StudentListResponse, StudentUpdateRequest
+
+logger = logging.getLogger(__name__)
 
 
 class StudentService:

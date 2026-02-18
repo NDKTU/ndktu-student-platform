@@ -1,3 +1,4 @@
+import logging
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,6 +7,8 @@ from fastapi_limiter.depends import RateLimiter
 
 from .schemas import HemisLoginRequest, HemisLoginResponse
 from .service import hemis_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/hemis", tags=["Hemis"])
 

@@ -20,6 +20,7 @@ services:
       retries: 3
     volumes:
       - ./backend/logs:/face/logs
+      - ./backend/uploads:/face/uploads
       - ~/.logfire:/root/.logfire:ro
     networks:
       - app_network

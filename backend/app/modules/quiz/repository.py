@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import HTTPException, status
 from app.models.quiz.model import Quiz
 from app.models.question.model import Question
@@ -12,9 +14,9 @@ from .schemas import (
     QuizListResponse,
 )
 from core.config import settings
-
-
 from app.models.group_teachers.model import GroupTeacher
+
+logger = logging.getLogger(__name__)
 
 class QuizRepository:
     async def create_quiz(

@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import HTTPException, status
 from app.models.question.model import Question
 from sqlalchemy import func, select
@@ -9,6 +11,8 @@ from .schemas import (
     QuestionListResponse,
 )
 from core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class QuestionRepository:
@@ -205,7 +209,7 @@ class QuestionRepository:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Database error during bulk upload",
             )
-        
+
         return questions
 
 get_question_repository = QuestionRepository()

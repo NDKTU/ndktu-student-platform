@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import HTTPException, status
 from app.models.role.model import Role
 from app.models.user.model import User
@@ -13,6 +15,8 @@ from .schemas import (
     UserUpdateRequest,
     UserRoleAssignRequest,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class UserRepository:
@@ -182,6 +186,10 @@ class UserRepository:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Database error while assigning roles"
             )
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 get_user_repository = UserRepository()

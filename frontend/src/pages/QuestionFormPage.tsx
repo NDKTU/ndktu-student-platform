@@ -1,10 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { QuestionCreateRequest } from '@/services/questionService';
+import { questionService } from '@/services/questionService';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, ImagePlus } from 'lucide-react';
 import JoditEditor from 'jodit-react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
@@ -40,6 +41,10 @@ const QuestionFormPage = () => {
     const isSubmitting = createMutation.isPending || updateMutation.isPending;
     const isLoading = isEditMode && isQuestionLoading;
 
+    // Refs to track which editor is "active" for image insertion
+    const activeEditorRef = useRef<any>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
     const {
         register,
         handleSubmit,
@@ -71,6 +76,46 @@ const QuestionFormPage = () => {
         }
     }, [question, reset]);
 
+    const joditConfig = useMemo(() => {
+        return {
+            readonly: false,
+            placeholder: 'Start writing...',
+            uploader: {
+                insertImageAsBase64URI: false,
+            },
+        } as any;
+    }, []);
+
+    const handleImageUpload = async (file: File, editorInstance: any) => {
+        try {
+            const result = await questionService.uploadImage(file);
+            if (result.url && editorInstance) {
+                editorInstance.selection.insertHTML(
+                    `<img src="${result.url}" alt="uploaded" style="max-width: 100%;" />`
+                );
+            }
+        } catch (error) {
+            console.error('Image upload failed', error);
+            alert('Rasm yuklashda xatolik yuz berdi');
+        }
+    };
+
+    const handleUploadButtonClick = (editorInstance: any) => {
+        activeEditorRef.current = editorInstance;
+        fileInputRef.current?.click();
+    };
+
+    const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file && activeEditorRef.current) {
+            await handleImageUpload(file, activeEditorRef.current);
+        }
+        // Reset input so the same file can be selected again
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
     const onSubmit = (data: QuestionFormValues) => {
         if (!user) {
             alert('User not authenticated');
@@ -86,11 +131,11 @@ const QuestionFormPage = () => {
             option_c: data.option_c,
             option_d: data.option_d,
         };
-        
+
         const onSuccess = () => {
-             navigate('/questions');
+            navigate('/questions');
         };
-        
+
         const onError = (error: unknown) => {
             console.error('Failed to save question', error);
             alert('Failed to save question');
@@ -111,8 +156,46 @@ const QuestionFormPage = () => {
         );
     }
 
+    const renderEditorWithUpload = (
+        label: string,
+        field: any,
+        error?: string
+    ) => (
+        <div className="space-y-2">
+            <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">{label}</label>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleUploadButtonClick(field.ref)}
+                    className="flex items-center gap-1 text-xs"
+                >
+                    <ImagePlus className="h-3.5 w-3.5" />
+                    Rasm yuklash
+                </Button>
+            </div>
+            <JoditEditor
+                ref={(ref: any) => { field.ref = ref; }}
+                value={field.value}
+                config={joditConfig}
+                onBlur={(newContent: string) => field.onChange(newContent)}
+            />
+            {error && <p className="text-xs text-destructive">{error}</p>}
+        </div>
+    );
+
     return (
         <div className="space-y-6 w-full mx-auto pb-10">
+            {/* Hidden file input for image upload */}
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelected}
+                className="hidden"
+            />
+
             <div className="flex items-center gap-4">
                 <Button variant="ghost" size="sm" onClick={() => navigate('/questions')}>
                     <ArrowLeft className="h-4 w-4" />
@@ -138,83 +221,33 @@ const QuestionFormPage = () => {
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Question Text</label>
-                            <Controller
-                                name="text"
-                                control={control}
-                                render={({ field }) => (
-                                    <JoditEditor
-                                        value={field.value}
-                                        onBlur={(newContent: string) => field.onChange(newContent)}
-                                        onChange={() => { }}
-                                    />
-                                )}
-                            />
-                            {errors.text && <p className="text-xs text-destructive">{errors.text.message}</p>}
-                        </div>
+                        <Controller
+                            name="text"
+                            control={control}
+                            render={({ field }) => renderEditorWithUpload('Question Text', field, errors.text?.message)}
+                        />
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Option A</label>
-                                <Controller
-                                    name="option_a"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <JoditEditor
-                                            value={field.value}
-                                            onBlur={(newContent: string) => field.onChange(newContent)}
-                                            onChange={() => { }}
-                                        />
-                                    )}
-                                />
-                                {errors.option_a && <p className="text-xs text-destructive">{errors.option_a.message}</p>}
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Option B</label>
-                                <Controller
-                                    name="option_b"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <JoditEditor
-                                            value={field.value}
-                                            onBlur={(newContent: string) => field.onChange(newContent)}
-                                            onChange={() => { }}
-                                        />
-                                    )}
-                                />
-                                {errors.option_b && <p className="text-xs text-destructive">{errors.option_b.message}</p>}
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Option C</label>
-                                <Controller
-                                    name="option_c"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <JoditEditor
-                                            value={field.value}
-                                            onBlur={(newContent: string) => field.onChange(newContent)}
-                                            onChange={() => { }}
-                                        />
-                                    )}
-                                />
-                                {errors.option_c && <p className="text-xs text-destructive">{errors.option_c.message}</p>}
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Option D</label>
-                                <Controller
-                                    name="option_d"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <JoditEditor
-                                            value={field.value}
-                                            onBlur={(newContent: string) => field.onChange(newContent)}
-                                            onChange={() => { }}
-                                        />
-                                    )}
-                                />
-                                {errors.option_d && <p className="text-xs text-destructive">{errors.option_d.message}</p>}
-                            </div>
+                            <Controller
+                                name="option_a"
+                                control={control}
+                                render={({ field }) => renderEditorWithUpload('Option A', field, errors.option_a?.message)}
+                            />
+                            <Controller
+                                name="option_b"
+                                control={control}
+                                render={({ field }) => renderEditorWithUpload('Option B', field, errors.option_b?.message)}
+                            />
+                            <Controller
+                                name="option_c"
+                                control={control}
+                                render={({ field }) => renderEditorWithUpload('Option C', field, errors.option_c?.message)}
+                            />
+                            <Controller
+                                name="option_d"
+                                control={control}
+                                render={({ field }) => renderEditorWithUpload('Option D', field, errors.option_d?.message)}
+                            />
                         </div>
 
                         <div className="flex justify-end gap-2 pt-4">

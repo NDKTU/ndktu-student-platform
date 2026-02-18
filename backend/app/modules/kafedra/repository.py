@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import HTTPException, status
 from app.models.kafedra.model import Kafedra
 from sqlalchemy import func, select
@@ -8,6 +10,8 @@ from .schemas import (
     KafedraListRequest,
     KafedraListResponse,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class KafedraRepository:

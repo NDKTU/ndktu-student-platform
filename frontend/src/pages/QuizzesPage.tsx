@@ -28,10 +28,10 @@ import { useGroups } from '@/hooks/useGroups';
 import { useUsers } from '@/hooks/useUsers';
 
 const quizSchema = z.object({
-    title: z.string().min(3, 'Title is required'),
-    question_number: z.string().min(1, 'Question number is required').refine((val) => !isNaN(parseInt(val)) && parseInt(val) > 0, 'Must be a positive number'),
-    duration: z.string().min(1, 'Duration is required').refine((val) => !isNaN(parseInt(val)) && parseInt(val) > 0, 'Must be a positive number'),
-    pin: z.string().min(4, 'PIN is required'),
+    title: z.string().min(3, 'Sarlavha kiritilishi shart'),
+    question_number: z.string().min(1, 'Savollar soni kiritilishi shart').refine((val: string) => !isNaN(parseInt(val)) && parseInt(val) > 0, 'Musbat son bo\'lishi kerak'),
+    duration: z.string().min(1, 'Davomiylik kiritilishi shart').refine((val: string) => !isNaN(parseInt(val)) && parseInt(val) > 0, 'Musbat son bo\'lishi kerak'),
+    pin: z.string().min(4, 'PIN kiritilishi shart'),
     user_id: z.string().optional(),
     group_id: z.string().optional(),
     subject_id: z.string().optional(),
@@ -109,29 +109,25 @@ const QuizzesPage = () => {
             question_number: quiz.question_number,
             duration: quiz.duration,
             pin: quiz.pin,
-            user_id: quiz.user_id || undefined, // undefined to send as optional/null-like
-            group_id: quiz.group_id || undefined,
-            subject_id: quiz.subject_id || undefined,
+            user_id: quiz.user_id ?? null,
+            group_id: quiz.group_id ?? null,
+            subject_id: quiz.subject_id ?? null,
             is_active: !quiz.is_active,
         };
-
-        // Note: The backend expects specific types, here we assume update handles partial or full updates
-        // However, looking at the schema, it seems we might need to send all fields.
-        // We are using the same payload structure.
 
         updateQuizMutation.mutate({ id: quiz.id, data: payload }, {
             onSettled: () => {
                 setIsUpdatingStatus(null);
             },
-            onError: (error) => {
+            onError: (error: unknown) => {
                 console.error('Failed to update quiz status', error);
-                alert('Failed to update quiz status');
+                alert('Test holatini yangilashda xatolik yuz berdi');
             }
         });
     };
 
-    const getSubjectName = (id?: number) => subjects.find(s => s.id === id)?.name || '-';
-    const getGroupName = (id?: number) => groups.find(g => g.id === id)?.name || '-';
+    const getSubjectName = (id?: number) => subjects.find((s: Subject) => s.id === id)?.name || '-';
+    const getGroupName = (id?: number) => groups.find((g: Group) => g.id === id)?.name || '-';
 
     return (
         <div className="space-y-6">
@@ -140,21 +136,20 @@ const QuizzesPage = () => {
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Search quizzes..."
+                            placeholder="Testlarni qidiring..."
                             className="pl-8 w-[250px]"
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                         />
                     </div>
                     <Button onClick={handleCreateQuiz}>
                         <Plus className="mr-2 h-4 w-4" />
-                        Create Quiz
+                        Test yaratish
                     </Button>
                 </div>
             </div>
 
             <Card>
-
                 <CardContent>
                     {isQuizzesLoading ? (
                         <div className="flex justify-center p-8">
@@ -163,20 +158,20 @@ const QuizzesPage = () => {
                     ) : quizzes.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                             <BookOpen className="h-12 w-12 mb-4 opacity-20" />
-                            <p>No quizzes found. Create one to get started.</p>
+                            <p>Testlar topilmadi. Boshlash uchun yangi test yarating.</p>
                         </div>
                     ) : (
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Title</TableHead>
-                                    <TableHead>Q/N</TableHead>
-                                    <TableHead>Duration</TableHead>
+                                    <TableHead>Sarlavha</TableHead>
+                                    <TableHead>S/S</TableHead>
+                                    <TableHead>Davomiyligi</TableHead>
                                     <TableHead>PIN</TableHead>
-                                    <TableHead>Active</TableHead>
-                                    <TableHead>Subject</TableHead>
-                                    <TableHead>Group</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead>Faol</TableHead>
+                                    <TableHead>Fan</TableHead>
+                                    <TableHead>Guruh</TableHead>
+                                    <TableHead className="text-right">Amallar</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -184,7 +179,7 @@ const QuizzesPage = () => {
                                     <TableRow key={quiz.id}>
                                         <TableCell className="font-medium">{quiz.title}</TableCell>
                                         <TableCell>{quiz.question_number}</TableCell>
-                                        <TableCell>{quiz.duration} min</TableCell>
+                                        <TableCell>{quiz.duration} daq</TableCell>
                                         <TableCell><span className="font-mono bg-muted px-2 py-1 rounded">{quiz.pin}</span></TableCell>
                                         <TableCell>
                                             <div className="flex items-center space-x-2">
@@ -194,7 +189,7 @@ const QuizzesPage = () => {
                                                     disabled={isUpdatingStatus === quiz.id || updateQuizMutation.isPending}
                                                 />
                                                 <span className={`text-xs ${quiz.is_active ? 'text-green-600 font-medium' : 'text-muted-foreground'}`}>
-                                                    {quiz.is_active ? 'Active' : 'Inactive'}
+                                                    {quiz.is_active ? 'Faol' : 'Faol emas'}
                                                 </span>
                                             </div>
                                         </TableCell>
@@ -247,10 +242,10 @@ const QuizzesPage = () => {
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={handleConfirmDelete}
-                title="Delete Quiz"
-                description={`Are you sure you want to delete the quiz "${quizToDelete?.title}"? This action cannot be undone.`}
-                confirmText="Delete"
-                cancelText="Cancel"
+                title="Testni o'chirish"
+                description={`"${quizToDelete?.title}" testini o'chirishni xohlaysizmi? Bu amalni ortga qaytarib bo'lmaydi.`}
+                confirmText="O'chirish"
+                cancelText="Bekor qilish"
             />
         </div>
     );
@@ -309,9 +304,9 @@ const QuizModal = ({
         } else {
             reset({
                 title: '',
-                question_number: '10', // Default
-                duration: '30', // Default
-                pin: Math.random().toString().slice(2, 6), // Generate random PIN
+                question_number: '10',
+                duration: '30',
+                pin: Math.random().toString().slice(2, 6),
                 user_id: '',
                 group_id: '',
                 subject_id: '',
@@ -326,26 +321,26 @@ const QuizModal = ({
             question_number: parseInt(data.question_number, 10),
             duration: parseInt(data.duration, 10),
             pin: data.pin,
-            user_id: data.user_id ? parseInt(data.user_id, 10) : undefined,
-            group_id: data.group_id ? parseInt(data.group_id, 10) : undefined,
-            subject_id: data.subject_id ? parseInt(data.subject_id, 10) : undefined,
+            user_id: data.user_id && data.user_id !== "" ? parseInt(data.user_id, 10) : null,
+            group_id: data.group_id && data.group_id !== "" ? parseInt(data.group_id, 10) : null,
+            subject_id: data.subject_id && data.subject_id !== "" ? parseInt(data.subject_id, 10) : null,
             is_active: data.is_active,
         };
 
         if (quiz) {
             updateMutation.mutate({ id: quiz.id, data: payload }, {
                 onSuccess: () => onSuccess(),
-                onError: (error) => {
+                onError: (error: unknown) => {
                     console.error('Failed to update quiz', error);
-                    alert('Failed to update quiz');
+                    alert('Testni yangilashda xatolik yuz berdi');
                 }
             });
         } else {
             createMutation.mutate(payload, {
                 onSuccess: () => onSuccess(),
-                onError: (error) => {
+                onError: (error: unknown) => {
                     console.error('Failed to create quiz', error);
-                    alert('Failed to create quiz');
+                    alert('Testni yaratishda xatolik yuz berdi');
                 }
             });
         }
@@ -355,24 +350,24 @@ const QuizModal = ({
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title={quiz ? 'Edit Quiz' : 'Create Quiz'}
+            title={quiz ? 'Testni tahrirlash' : 'Test yaratish'}
         >
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <Input
-                    label="Title"
+                    label="Sarlavha"
                     {...register('title')}
                     error={errors.title?.message}
                 />
 
                 <div className="grid grid-cols-2 gap-4">
                     <Input
-                        label="Questions Count"
+                        label="Savollar soni"
                         type="number"
                         {...register('question_number')}
                         error={errors.question_number?.message}
                     />
                     <Input
-                        label="Duration (min)"
+                        label="Davomiyligi (daq)"
                         type="number"
                         {...register('duration')}
                         error={errors.duration?.message}
@@ -381,7 +376,7 @@ const QuizModal = ({
 
                 <div className="grid grid-cols-2 gap-4">
                     <Input
-                        label="PIN Code"
+                        label="PIN kod"
                         {...register('pin')}
                         error={errors.pin?.message}
                     />
@@ -392,18 +387,18 @@ const QuizModal = ({
                             onCheckedChange={(checked) => setValue('is_active', checked)}
                         />
                         <label htmlFor="modal-is-active" className="text-sm font-medium leading-none cursor-pointer">
-                            Active
+                            Faol
                         </label>
                     </div>
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">Subject</label>
+                    <label className="text-sm font-medium">Fan</label>
                     <select
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         {...register('subject_id')}
                     >
-                        <option value="">Select a subject</option>
+                        <option value="">Fanni tanlang</option>
                         {subjects.map((s) => (
                             <option key={s.id} value={s.id}>{s.name}</option>
                         ))}
@@ -411,12 +406,12 @@ const QuizModal = ({
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">Group</label>
+                    <label className="text-sm font-medium">Guruh</label>
                     <select
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         {...register('group_id')}
                     >
-                        <option value="">Select a group</option>
+                        <option value="">Guruhni tanlang</option>
                         {groups.map((g) => (
                             <option key={g.id} value={g.id}>{g.name}</option>
                         ))}
@@ -424,12 +419,12 @@ const QuizModal = ({
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">Teacher/User</label>
+                    <label className="text-sm font-medium">O'qituvchi/Foydalanuvchi</label>
                     <select
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         {...register('user_id')}
                     >
-                        <option value="">Select a user</option>
+                        <option value="">Foydalanuvchini tanlang</option>
                         {users.map((u) => (
                             <option key={u.id} value={u.id}>{u.username}</option>
                         ))}
@@ -438,10 +433,10 @@ const QuizModal = ({
 
                 <div className="flex justify-end gap-2 pt-4">
                     <Button type="button" variant="outline" onClick={onClose}>
-                        Cancel
+                        Bekor qilish
                     </Button>
                     <Button type="submit" isLoading={isSubmitting}>
-                        {quiz ? 'Update' : 'Create'}
+                        {quiz ? 'Yangilash' : 'Yaratish'}
                     </Button>
                 </div>
             </form>

@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import HTTPException, status
 from app.models.permission.model import Permission
 from sqlalchemy import func, select
@@ -8,6 +10,8 @@ from .schemas import (
     PermissionListRequest,
     PermissionListResponse,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class PermissionRepository:

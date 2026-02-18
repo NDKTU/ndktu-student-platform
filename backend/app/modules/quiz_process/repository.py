@@ -1,3 +1,6 @@
+import logging
+import random
+
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,7 +22,9 @@ from .schemas import (
     EndQuizResponse,
     QuestionDTO,
 )
-import random
+
+logger = logging.getLogger(__name__)
+
 
 class QuizProcessRepository:
     async def start_quiz(
@@ -211,7 +216,7 @@ class QuizProcessRepository:
             await session.refresh(result)
         except Exception as e:
             await session.rollback()
-            print(f"Error saving result: {e}") # Debug print
+            logger.error(f"Error saving result: {e}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Database error while saving result: {e}",

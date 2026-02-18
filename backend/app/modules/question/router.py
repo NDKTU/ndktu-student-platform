@@ -1,3 +1,5 @@
+import logging
+
 from core.db_helper import db_helper
 from dependence.role_checker import PermissionRequired
 from fastapi import APIRouter, Depends, status, UploadFile, File
@@ -13,6 +15,8 @@ from .schemas import (
     QuestionListResponse,
 )
 # from app.core.cache import clear_cache, custom_key_builder
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     tags=["Question"],

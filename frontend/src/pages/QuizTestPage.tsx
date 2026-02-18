@@ -41,7 +41,7 @@ const QuizTestPage = () => {
         if (phase !== 'quiz' || timeLeft <= 0) return;
 
         const timer = setInterval(() => {
-            setTimeLeft((prev) => {
+            setTimeLeft((prev: number) => {
                 if (prev <= 1) {
                     clearInterval(timer);
                     handleSubmit();
@@ -76,7 +76,7 @@ const QuizTestPage = () => {
 
     const handleStartQuiz = () => {
         if (!selectedQuiz || !pin) {
-            setStartError('Please enter the PIN');
+            setStartError('PIN kodni kiriting');
             return;
         }
 
@@ -101,7 +101,7 @@ const QuizTestPage = () => {
     };
 
     const handleSelectAnswer = (questionId: number, option: string) => {
-        setAnswers((prev) => ({ ...prev, [questionId]: option }));
+        setAnswers((prev: Record<number, string>) => ({ ...prev, [questionId]: option }));
     };
 
     const handleSubmit = useCallback(() => {
@@ -131,7 +131,7 @@ const QuizTestPage = () => {
                 setResults(data);
                 setPhase('results');
             },
-            onError: (error) => {
+            onError: (error: unknown) => {
                 console.error('Failed to submit quiz', error);
                 alert('Testni yuborishda xatolik yuz berdi. Iltimos qayta urinib ko\'ring.');
             }
@@ -215,9 +215,9 @@ const QuizTestPage = () => {
                             label="PIN Kod"
                             type="text"
                             value={pin}
-                            onChange={(e) => setPin(e.target.value)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPin(e.target.value)}
                             placeholder="PIN kodni kiriting"
-                            onKeyDown={(e) => e.key === 'Enter' && handleStartQuiz()}
+                            onKeyDown={(e: React.KeyboardEvent) => e.key === 'Enter' && handleStartQuiz()}
                             autoFocus
                         />
                         {startError && (
@@ -428,7 +428,7 @@ const QuizTestPage = () => {
             <div className="flex items-center justify-between">
                 <Button
                     variant="outline"
-                    onClick={() => setCurrentQuestionIndex((prev) => prev - 1)}
+                    onClick={() => setCurrentQuestionIndex((prev: number) => prev - 1)}
                     disabled={isFirstQuestion}
                 >
                     <ChevronLeft className="mr-2 h-4 w-4" />
@@ -447,7 +447,7 @@ const QuizTestPage = () => {
                         </Button>
                     ) : (
                         <Button
-                            onClick={() => setCurrentQuestionIndex((prev) => prev + 1)}
+                            onClick={() => setCurrentQuestionIndex((prev: number) => prev + 1)}
                         >
                             Keyingi
                             <ChevronRight className="ml-2 h-4 w-4" />

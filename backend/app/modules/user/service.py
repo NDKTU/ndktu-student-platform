@@ -1,3 +1,5 @@
+import logging
+
 from datetime import datetime, timedelta, timezone
 
 import jwt
@@ -12,6 +14,8 @@ from app.models.teacher.model import Teacher
 from app.models.student.model import Student
 
 from .schemas import UserLoginRequest, UserLoginResponse
+
+logger = logging.getLogger(__name__)
 
 
 class UserService:

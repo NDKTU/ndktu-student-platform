@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import HTTPException, status
 from app.models.subject.model import Subject
 from sqlalchemy import func, select
@@ -8,6 +10,8 @@ from .schemas import (
     SubjectListRequest,
     SubjectListResponse,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class SubjectRepository:

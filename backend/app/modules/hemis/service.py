@@ -1,3 +1,4 @@
+import logging
 
 import httpx
 from datetime import datetime, date
@@ -16,6 +17,8 @@ from app.models.faculty.model import Faculty
 from app.models.role.model import Role
 from modules.user.service import auth_service
 from .schemas import HemisLoginRequest, HemisLoginResponse
+
+logger = logging.getLogger(__name__)
 
 class HemisLoginService:
     async def hemis_login(self, session: AsyncSession, data: HemisLoginRequest) -> HemisLoginResponse:

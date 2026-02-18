@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import HTTPException, status
 from app.models.results.model import Result
 from app.models.quiz.model import Quiz
@@ -19,6 +21,8 @@ from .schemas import (
     TeacherStatisticsResponse,
     FacultyGroupStat,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class StatisticsRepository:

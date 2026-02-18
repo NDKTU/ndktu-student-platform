@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import HTTPException, status
 from app.models.teacher.model import Teacher
 from sqlalchemy import func, select
@@ -8,6 +10,8 @@ from .schemas import (
     TeacherListRequest,
     TeacherListResponse,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class TeacherRepository:

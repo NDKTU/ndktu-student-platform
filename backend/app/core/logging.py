@@ -32,12 +32,10 @@ console_formatter = logging.Formatter(
     "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
 )
 
-debug_formatter = logging.Formatter(
-    "%(levelname)s | %(name)s | %(message)s"
-)  # no timestamp
 
 
-# --- Filters per level ---
+
+# --- Filters ---
 class LevelFilter(logging.Filter):
     """Filter logs by level name."""
 
@@ -49,18 +47,24 @@ class LevelFilter(logging.Filter):
         return record.levelname == self.level_name
 
 
+class HealthCheckFilter(logging.Filter):
+    """Filter out /health endpoint logs to reduce noise."""
+
+    def filter(self, record):
+        return "/health" not in record.getMessage()
+
+
 # --- Root logger ---
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)  # Default to INFO to suppress noisy library debug logs
-
-# --- App-specific loggers to DEBUG ---
-# Enable DEBUG for our own application modules
-for module in ["core", "middleware", "models", "modules", "dependence", "lifespan", "app"]:
-    logging.getLogger(module).setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 # --- Suppress Noisy Libraries ---
-logging.getLogger("watchfiles").setLevel(logging.WARNING)
-logging.getLogger("uvicorn.error").setLevel(logging.WARNING)
+# Keep third-party libraries at WARNING+ to avoid flooding debug logs
+for lib in ["watchfiles", "uvicorn.error", "uvicorn.access", "httpcore", "httpx",
+            "hpack", "multipart", "sqlalchemy.engine", "aioredis", "asyncio"]:
+    logging.getLogger(lib).setLevel(logging.WARNING)
+
+
 
 
 # --- Logfire Handler ---
@@ -92,10 +96,10 @@ for level in LEVELS:
     handler.setLevel(getattr(logging, level.upper()))
     handler.addFilter(LevelFilter(level))  # only this level
 
-    # Formatter: debug simplified, others detailed
-    if level == "debug":
-        handler.setFormatter(debug_formatter)
-    else:
-        handler.setFormatter(detailed_formatter)
+    handler.setFormatter(detailed_formatter)
+
+    # Filter out /health noise from info logs
+    if level == "info":
+        handler.addFilter(HealthCheckFilter())
 
     logger.addHandler(handler)
