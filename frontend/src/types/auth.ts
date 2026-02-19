@@ -47,8 +47,8 @@ export interface User {
     username: string;
     is_active: boolean;
     roles: Role[];
-    teacher: Teacher | null;
-    student: Student | null;
+    teacher?: Teacher;
+    student?: Student;
     created_at: string;
     updated_at: string;
 }

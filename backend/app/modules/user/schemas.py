@@ -114,7 +114,7 @@ class UserListResponse(BaseModel):
     total: int
     page: int
     limit: int
-    users: list[UserCreateResponse]
+    users: list[UserDetailResponse]
 
 
 class UserLoginRequest(BaseModel):

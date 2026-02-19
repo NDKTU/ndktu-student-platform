@@ -18,7 +18,6 @@ import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useQuestions, useDeleteQuestion, useUploadQuestions } from '@/hooks/useQuestions';
 import { useSubjects } from '@/hooks/useSubjects';
-import { useUsers } from '@/hooks/useUsers';
 import { Input } from '@/components/ui/Input';
 
 const QuestionsPage = () => {
@@ -44,13 +43,11 @@ const QuestionsPage = () => {
 
     const { data: questionsData, isLoading: isQuestionsLoading } = useQuestions(currentPage, pageSize, debouncedSearch);
     const { data: subjectsData } = useSubjects(1, 100);
-    const { data: usersData } = useUsers(1, 100);
     const deleteQuestionMutation = useDeleteQuestion();
 
     const questions = questionsData?.questions || [];
     const totalPages = questionsData ? Math.ceil(questionsData.total / pageSize) : 1;
     const subjects = subjectsData?.subjects || [];
-    const users = usersData?.users || [];
 
     const handleCreateQuestion = () => {
         navigate('/questions/create');
@@ -87,7 +84,6 @@ const QuestionsPage = () => {
     };
 
     const getSubjectName = (id?: number) => subjects.find(s => s.id === id)?.name || '-';
-    const getUserName = (id?: number) => users.find(u => u.id === id)?.username || '-';
 
     // Helper to strip HTML tags for preview
     const stripHtml = (html: string) => {
@@ -159,8 +155,8 @@ const QuestionsPage = () => {
                                                     {plainText.length > 100 ? `${plainText.substring(0, 100)}...` : plainText}
                                                 </div>
                                             </TableCell>
-                                            <TableCell>{getSubjectName(question.subject_id)}</TableCell>
-                                            <TableCell>{getUserName(question.user_id)}</TableCell>
+                                            <TableCell>{question.subject_name || '-'}</TableCell>
+                                            <TableCell>{question.username || '-'}</TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">
                                                     <Button

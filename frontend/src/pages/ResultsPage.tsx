@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Pagination } from '@/components/ui/Pagination';
 import { useResults } from '@/hooks/useResults';
 import {
@@ -18,6 +19,7 @@ const ResultsPage = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 10;
     const { user } = useAuth();
+    const navigate = useNavigate();
 
     const isStudent = user?.roles?.some(role => role.name.toLowerCase() === 'student');
     const userId = isStudent ? user?.id : undefined;
@@ -27,10 +29,15 @@ const ResultsPage = () => {
     const results = resultsData?.results || [];
     const totalPages = resultsData ? Math.ceil(resultsData.total / pageSize) : 1;
 
+    const handleRowClick = (result: typeof results[0]) => {
+        const params = new URLSearchParams();
+        if (result.user_id) params.set('user_id', String(result.user_id));
+        if (result.quiz_id) params.set('quiz_id', String(result.quiz_id));
+        navigate(`/results/answers?${params.toString()}`);
+    };
+
     return (
         <div className="space-y-6">
-
-
             <Card>
                 <CardContent>
                     {isResultsLoading ? (
@@ -48,6 +55,8 @@ const ResultsPage = () => {
                                 <TableRow>
                                     <TableHead>ID</TableHead>
                                     <TableHead>Talaba</TableHead>
+                                    <TableHead>Fan</TableHead>
+                                    <TableHead>Guruh</TableHead>
                                     <TableHead>Test</TableHead>
                                     <TableHead>Ball</TableHead>
                                     <TableHead>To'g'ri / Jami</TableHead>
@@ -56,19 +65,30 @@ const ResultsPage = () => {
                             </TableHeader>
                             <TableBody>
                                 {results.map((result) => (
-                                    <TableRow key={result.id}>
+                                    <TableRow
+                                        key={result.id}
+                                        className="cursor-pointer hover:bg-muted/50"
+                                        onClick={() => handleRowClick(result)}
+                                    >
                                         <TableCell>{result.id}</TableCell>
                                         <TableCell className="font-medium">
-                                            {result.user?.username || `Foydalanuvchi ${result.user_id}`}
+                                            <div>{result.student_name || result.user?.username || `Foydalanuvchi ${result.user_id}`}</div>
+                                            {result.student_id && (
+                                                <div className="text-xs text-muted-foreground">
+                                                    ID: {result.student_id}
+                                                </div>
+                                            )}
                                         </TableCell>
+                                        <TableCell>{result.subject?.name || '-'}</TableCell>
+                                        <TableCell>{result.group?.name || '-'}</TableCell>
                                         <TableCell>{result.quiz?.title || `Test ${result.quiz_id}`}</TableCell>
                                         <TableCell>
                                             <span className={
-                                                result.grade >= 80 ? "text-green-600 font-medium" :
-                                                    result.grade >= 50 ? "text-yellow-600" :
+                                                result.grade == 5 ? "text-green-600 font-medium" :
+                                                    (result.grade == 4 || result.grade == 3) ? "text-yellow-600" :
                                                         "text-red-600"
                                             }>
-                                                {result.grade}%
+                                                {result.grade}
                                             </span>
                                         </TableCell>
                                         <TableCell>{result.correct_answers} / {result.correct_answers + result.wrong_answers}</TableCell>

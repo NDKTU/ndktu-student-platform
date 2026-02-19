@@ -18,7 +18,7 @@ const QuizTestPage = () => {
     const [phase, setPhase] = useState<QuizPhase>('start');
 
     // Start phase
-    const { data: quizzesData, isLoading: isLoadingQuizzes } = useQuizzes(1, 100, undefined, true); // Fetch active quizzes
+    const { data: quizzesData, isLoading: isLoadingQuizzes } = useQuizzes(1, 100, undefined); // Fetch all quizzes to show upcoming/inactive ones too
     const [selectedQuiz, setSelectedQuiz] = useState<{ id: number; title: string } | null>(null);
     const [pin, setPin] = useState('');
     const [startError, setStartError] = useState('');
@@ -177,9 +177,14 @@ const QuizTestPage = () => {
                 ) : (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         {activeQuizzes.map((quiz) => (
-                            <Card key={quiz.id} className="flex flex-col">
+                            <Card key={quiz.id} className={`flex flex-col ${!quiz.is_active ? 'opacity-60 grayscale' : ''}`}>
                                 <CardHeader>
-                                    <CardTitle>{quiz.title}</CardTitle>
+                                    <CardTitle className="flex justify-between items-start">
+                                        <span>{quiz.title}</span>
+                                        {!quiz.is_active && (
+                                            <span className="text-xs bg-muted px-2 py-1 rounded">Faol emas</span>
+                                        )}
+                                    </CardTitle>
                                 </CardHeader>
                                 <CardContent className="flex-1">
                                     <div className="flex flex-col gap-2 text-sm text-muted-foreground mb-4">
@@ -195,9 +200,10 @@ const QuizTestPage = () => {
                                     <Button
                                         onClick={() => handleOpenStartModal(quiz)}
                                         className="w-full mt-auto"
+                                        disabled={!quiz.is_active}
                                     >
                                         <PlayCircle className="mr-2 h-4 w-4" />
-                                        Testni boshlash
+                                        {quiz.is_active ? 'Testni boshlash' : 'Test faol emas'}
                                     </Button>
                                 </CardContent>
                             </Card>
@@ -251,8 +257,8 @@ const QuizTestPage = () => {
             : 0;
 
         const gradeColor =
-            results.grade >= 80 ? 'text-green-600' :
-                results.grade >= 60 ? 'text-yellow-600' :
+            results.grade === 5 ? 'text-green-600' :
+                (results.grade === 4 || results.grade === 3) ? 'text-yellow-600' :
                     'text-red-600';
 
         return (
@@ -270,7 +276,7 @@ const QuizTestPage = () => {
                             {/* Grade Circle */}
                             <div className="flex justify-center">
                                 <div className={`text-6xl font-bold ${gradeColor}`}>
-                                    {results.grade.toFixed(1)}%
+                                    {results.grade}
                                 </div>
                             </div>
 

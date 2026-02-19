@@ -32,4 +32,4 @@ class EndQuizResponse(BaseModel):
     total_questions: int
     correct_answers: int
     wrong_answers: int
-    grade: float
+    grade: int

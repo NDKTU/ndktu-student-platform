@@ -3,6 +3,7 @@ import logging
 from fastapi import HTTPException, status
 from app.models.teacher.model import Teacher
 from sqlalchemy import func, select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .schemas import (
@@ -44,6 +45,13 @@ class TeacherRepository:
         try:
             await session.commit()
             await session.refresh(new_teacher)
+            # Eager load relationships for response
+            stmt = select(Teacher).options(
+                selectinload(Teacher.kafedra),
+                selectinload(Teacher.user),
+            ).where(Teacher.id == new_teacher.id)
+            result = await session.execute(stmt)
+            new_teacher = result.scalar_one()
         except Exception:
             await session.rollback()
             raise HTTPException(
@@ -55,7 +63,10 @@ class TeacherRepository:
     async def get_teacher(
         self, session: AsyncSession, teacher_id: int
     ) -> Teacher:
-        stmt = select(Teacher).where(Teacher.id == teacher_id)
+        stmt = select(Teacher).options(
+            selectinload(Teacher.kafedra),
+            selectinload(Teacher.user),
+        ).where(Teacher.id == teacher_id)
         result = await session.execute(stmt)
         teacher = result.scalar_one_or_none()
 
@@ -69,7 +80,10 @@ class TeacherRepository:
     async def list_teachers(
         self, session: AsyncSession, request: TeacherListRequest
     ) -> TeacherListResponse:
-        stmt = select(Teacher).offset(request.offset).limit(request.limit)
+        stmt = select(Teacher).options(
+            selectinload(Teacher.kafedra),
+            selectinload(Teacher.user),
+        ).offset(request.offset).limit(request.limit)
 
         if request.full_name:
             stmt = stmt.where(Teacher.full_name.ilike(f"%{request.full_name}%"))
@@ -96,7 +110,10 @@ class TeacherRepository:
     async def update_teacher(
         self, session: AsyncSession, teacher_id: int, data: TeacherCreateRequest
     ) -> Teacher:
-        stmt = select(Teacher).where(Teacher.id == teacher_id)
+        stmt = select(Teacher).options(
+            selectinload(Teacher.kafedra),
+            selectinload(Teacher.user),
+        ).where(Teacher.id == teacher_id)
         result = await session.execute(stmt)
         teacher = result.scalar_one_or_none()
 

@@ -3,6 +3,7 @@ import logging
 from fastapi import HTTPException, status
 from app.models.question.model import Question
 from sqlalchemy import func, select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .schemas import (
@@ -47,7 +48,10 @@ class QuestionRepository:
     async def get_question(
         self, session: AsyncSession, question_id: int
     ) -> Question:
-        stmt = select(Question).where(Question.id == question_id)
+        stmt = select(Question).options(
+            selectinload(Question.subject),
+            selectinload(Question.user),
+        ).where(Question.id == question_id)
         result = await session.execute(stmt)
         question = result.scalar_one_or_none()
 
@@ -61,7 +65,10 @@ class QuestionRepository:
     async def list_questions(
         self, session: AsyncSession, request: QuestionListRequest
     ) -> QuestionListResponse:
-        stmt = select(Question).offset(request.offset).limit(request.limit)
+        stmt = select(Question).options(
+            selectinload(Question.subject),
+            selectinload(Question.user),
+        ).offset(request.offset).limit(request.limit)
 
         if request.text:
             stmt = stmt.where(Question.text.ilike(f"%{request.text}%"))
@@ -93,7 +100,10 @@ class QuestionRepository:
     async def update_question(
         self, session: AsyncSession, question_id: int, data: QuestionCreateRequest
     ) -> Question:
-        stmt = select(Question).where(Question.id == question_id)
+        stmt = select(Question).options(
+            selectinload(Question.subject),
+            selectinload(Question.user),
+        ).where(Question.id == question_id)
         result = await session.execute(stmt)
         question = result.scalar_one_or_none()
 

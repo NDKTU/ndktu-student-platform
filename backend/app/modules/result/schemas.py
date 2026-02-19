@@ -1,6 +1,31 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
+
+
+class ResultUserInfo(BaseModel):
+    id: int
+    username: str
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ResultQuizInfo(BaseModel):
+    id: int
+    title: str
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ResultSubjectInfo(BaseModel):
+    id: int
+    name: str
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ResultGroupInfo(BaseModel):
+    id: int
+    name: str
+    model_config = ConfigDict(from_attributes=True)
+
 
 class ResultResponse(BaseModel):
     id: int
@@ -14,9 +39,28 @@ class ResultResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+    user: Optional[ResultUserInfo] = None
+    quiz: Optional[ResultQuizInfo] = None
+    subject: Optional[ResultSubjectInfo] = None
+    group: Optional[ResultGroupInfo] = None
+    student_id: Optional[str] = None
+    student_name: Optional[str] = None
+
     model_config = ConfigDict(
         from_attributes=True,
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def extract_student_data(cls, data):
+        if hasattr(data, "user") and data.user:
+            user = data.user
+            if hasattr(user, "student") and user.student:
+                student = user.student
+                data.student_id = student.student_id_number
+                data.student_name = student.full_name
+        return data
+
 
 class ResultListRequest(BaseModel):
     user_id: Optional[int] = None

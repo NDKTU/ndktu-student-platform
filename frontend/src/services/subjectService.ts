@@ -15,10 +15,12 @@ export interface SubjectListResponse {
 }
 
 export const subjectService = {
-    getSubjects: async (page = 1, limit = 100, name?: string) => {
-        const response = await api.get<SubjectListResponse>('/subject/', {
-            params: { page, limit, name },
-        });
+    getSubjects: async (page = 1, limit = 10, search = '', teacher_id?: number) => {
+        const params: any = { page, limit };
+        if (search) params.name = search;
+        if (teacher_id) params.teacher_id = teacher_id;
+
+        const response = await api.get<SubjectListResponse>('/subject/', { params });
         return response.data;
     },
 

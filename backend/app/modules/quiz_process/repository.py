@@ -191,13 +191,23 @@ class QuizProcessRepository:
         total_questions = len(data.answers) # Or strictly correct + wrong
         
         # Calculate grade (0-100)
-        grade = 0
+        # Calculate percentage (0-100)
+        percentage = 0
         if total_questions > 0:
-            grade = int((correct_count / total_questions) * 100)
-            
+            percentage = (correct_count / total_questions) * 100
+        
+        # Determine grade based on percentage
+        if percentage >= 86:
+            grade = 5
+        elif percentage >= 72:
+            grade = 4
+        elif percentage >= 56:
+            grade = 3
+        else:
+            grade = 2
+
         # Create Result
         # Assuming user_id is passed or handled via auth in router (for now relying on request data)
-        # Note: Result model expects integer for grade
         
         result = Result(
             user_id=user.id, # Use authenticated user ID

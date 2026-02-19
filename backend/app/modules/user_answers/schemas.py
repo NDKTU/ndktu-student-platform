@@ -1,23 +1,36 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, model_validator
 from typing import Optional
-
-# class UserAnswersSchema(BaseModel):
-#     id: int
-#     user_id: Optional[int]
-#     quiz_id: Optional[int]
-#     question_id: Optional[int]
-#     answer: Optional[str]
-#     is_correct: bool
+from datetime import datetime
 
 
-#     model_config = {
-#         "from_attributes": True
-#     }
+class UserAnswerQuestionInfo(BaseModel):
+    id: int
+    text: str
+    option_a: str
+    option_b: str
+    option_c: str
+    option_d: str
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserAnswerResponse(BaseModel):
+    id: int
+    user_id: Optional[int] = None
+    quiz_id: Optional[int] = None
+    question_id: Optional[int] = None
+    answer: Optional[str] = None
+    is_correct: bool
+    created_at: datetime
+    updated_at: datetime
+
+    question: Optional[UserAnswerQuestionInfo] = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserAnswersListRequest(BaseModel):
     page: int = 1
-    limit: int = 10
+    limit: int = 50
     user_id: Optional[int] = None
     quiz_id: Optional[int] = None
     question_id: Optional[int] = None
@@ -25,3 +38,10 @@ class UserAnswersListRequest(BaseModel):
     @property
     def offset(self) -> int:
         return (self.page - 1) * self.limit
+
+
+class UserAnswersListResponse(BaseModel):
+    total: int
+    page: int
+    limit: int
+    answers: list[UserAnswerResponse]

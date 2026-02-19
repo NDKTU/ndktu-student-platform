@@ -4,6 +4,7 @@ from fastapi import HTTPException, status
 from app.models.subject.model import Subject
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.subject_teacher.model import SubjectTeacher
 
 from .schemas import (
     SubjectCreateRequest,
@@ -57,7 +58,12 @@ class SubjectRepository:
     async def list_subjects(
         self, session: AsyncSession, request: SubjectListRequest
     ) -> SubjectListResponse:
-        stmt = select(Subject).offset(request.offset).limit(request.limit)
+        stmt = select(Subject)
+
+        if request.teacher_id:
+             stmt = stmt.join(SubjectTeacher, Subject.id == SubjectTeacher.subject_id).where(SubjectTeacher.teacher_id == request.teacher_id)
+
+        stmt = stmt.offset(request.offset).limit(request.limit)
 
         if request.name:
             stmt = stmt.where(Subject.name.ilike(f"%{request.name}%"))
@@ -66,6 +72,9 @@ class SubjectRepository:
         subjects = result.scalars().all()
 
         count_stmt = select(func.count()).select_from(Subject)
+        if request.teacher_id:
+             count_stmt = count_stmt.join(SubjectTeacher, Subject.id == SubjectTeacher.subject_id).where(SubjectTeacher.teacher_id == request.teacher_id)
+
         if request.name:
             count_stmt = count_stmt.where(Subject.name.ilike(f"%{request.name}%"))
 

@@ -14,6 +14,10 @@ export interface Result {
     created_at: string;
     user?: User;
     quiz?: Quiz;
+    subject?: { id: number; name: string };
+    group?: { id: number; name: string };
+    student_id?: string;
+    student_name?: string;
 }
 
 export interface ResultListResponse {

@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { groupService } from '@/services/groupService';
 
-export const useGroups = (page = 1, limit = 100, name?: string) => {
+export const useGroups = (page: number, limit: number, search: string, teacherId?: number) => {
     return useQuery({
-        queryKey: ['groups', page, limit, name],
-        queryFn: () => groupService.getGroups(page, limit, name),
+        queryKey: ['groups', page, limit, search, teacherId],
+        queryFn: () => groupService.getGroups(page, limit, search, teacherId),
+        placeholderData: (previousData) => previousData,
     });
 };
 

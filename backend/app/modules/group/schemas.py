@@ -28,6 +28,7 @@ class GroupCreateResponse(BaseModel):
 class GroupListRequest(BaseModel):
     name: Optional[str] = None 
     faculty_id: Optional[int] = None
+    teacher_id: Optional[int] = None
     
     page: int = 1 
     

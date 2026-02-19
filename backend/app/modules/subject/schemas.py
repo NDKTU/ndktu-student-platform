@@ -28,6 +28,7 @@ class SubjectListRequest(BaseModel):
     
     page: int = 1 
     
+    teacher_id: Optional[int] = None
     limit: int = 10 
 
     @property

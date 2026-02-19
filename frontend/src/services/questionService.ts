@@ -4,6 +4,8 @@ export interface Question {
     id: number;
     subject_id: number;
     user_id: number;
+    subject_name?: string;
+    username?: string;
     text: string;
     option_a: string;
     option_b: string;

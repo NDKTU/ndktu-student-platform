@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 class QuestionCreateRequest(BaseModel):
     subject_id: int
@@ -23,6 +23,8 @@ class QuestionCreateResponse(BaseModel):
     id: int
     subject_id: int
     user_id: int
+    subject_name: Optional[str] = None
+    username: Optional[str] = None
     text: str
     option_a: str
     option_b: str
@@ -34,6 +36,15 @@ class QuestionCreateResponse(BaseModel):
     model_config = ConfigDict(
         from_attributes=True,
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def extract_names(cls, data):
+        if hasattr(data, "subject") and data.subject:
+            data.subject_name = data.subject.name
+        if hasattr(data, "user") and data.user:
+            data.username = data.user.username
+        return data
 
 class QuestionListRequest(BaseModel):
     text: Optional[str] = None 

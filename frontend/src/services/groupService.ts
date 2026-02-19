@@ -16,10 +16,12 @@ export interface GroupListResponse {
 }
 
 export const groupService = {
-    getGroups: async (page = 1, limit = 100, name?: string) => {
-        const response = await api.get<GroupListResponse>('/group/', {
-            params: { page, limit, name },
-        });
+    getGroups: async (page = 1, limit = 10, search = '', teacher_id?: number) => {
+        const params: any = { page, limit };
+        if (search) params.name = search;
+        if (teacher_id) params.teacher_id = teacher_id;
+
+        const response = await api.get<GroupListResponse>('/group/', { params });
         return response.data;
     },
 

@@ -2,6 +2,20 @@ from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, ConfigDict, field_validator
 
+
+class TeacherKafedraInfo(BaseModel):
+    id: int
+    name: str
+    faculty_id: Optional[int] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TeacherUserInfo(BaseModel):
+    id: int
+    username: str
+    model_config = ConfigDict(from_attributes=True)
+
+
 class TeacherCreateRequest(BaseModel):
     first_name: str
     last_name: str
@@ -27,6 +41,9 @@ class TeacherCreateResponse(BaseModel):
     kafedra_id: int
     created_at: datetime  
     updated_at: datetime
+
+    kafedra: Optional[TeacherKafedraInfo] = None
+    user: Optional[TeacherUserInfo] = None
 
     model_config = ConfigDict(
         from_attributes=True,

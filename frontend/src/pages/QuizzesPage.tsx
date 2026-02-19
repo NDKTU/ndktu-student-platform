@@ -14,18 +14,19 @@ import {
     TableRow,
 } from '@/components/ui/Table';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Plus, Pencil, Trash2, Loader2, BookOpen, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, BookOpen, Search, X } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuizzes, useCreateQuiz, useUpdateQuiz, useDeleteQuiz } from '@/hooks/useQuizzes';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useGroups } from '@/hooks/useGroups';
 import { useUsers } from '@/hooks/useUsers';
+import { Combobox } from '@/components/ui/Combobox';
 
 const quizSchema = z.object({
     title: z.string().min(3, 'Sarlavha kiritilishi shart'),
@@ -51,6 +52,12 @@ const QuizzesPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
 
+    // Filter states
+    const [filterSubjectId, setFilterSubjectId] = useState<number | undefined>(undefined);
+    const [filterGroupId, setFilterGroupId] = useState<number | undefined>(undefined);
+    const [filterUserId, setFilterUserId] = useState<number | undefined>(undefined);
+    const [filterIsActive, setFilterIsActive] = useState<boolean | undefined>(undefined);
+
     useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedSearch(searchTerm);
@@ -59,19 +66,29 @@ const QuizzesPage = () => {
         return () => clearTimeout(timer);
     }, [searchTerm]);
 
-    const { data: quizzesData, isLoading: isQuizzesLoading } = useQuizzes(currentPage, pageSize, debouncedSearch);
-    const { data: subjectsData } = useSubjects(1, 100);
-    const { data: groupsData } = useGroups(1, 100);
-    const { data: usersData } = useUsers(1, 100);
+    const { data: quizzesData, isLoading: isQuizzesLoading } = useQuizzes(
+        currentPage,
+        pageSize,
+        debouncedSearch,
+        filterIsActive,
+        filterUserId,
+        filterGroupId,
+        filterSubjectId
+    );
+
+    // Fetch data for filters (all items)
+    const { data: allSubjectsData } = useSubjects(1, 100);
+    const { data: allGroupsData } = useGroups(1, 100, '');
+    const { data: allUsersData } = useUsers(1, 100);
 
     const updateQuizMutation = useUpdateQuiz();
     const deleteQuizMutation = useDeleteQuiz();
 
     const quizzes = quizzesData?.quizzes || [];
     const totalPages = quizzesData ? Math.ceil(quizzesData.total / pageSize) : 1;
-    const subjects = subjectsData?.subjects || [];
-    const groups = groupsData?.groups || [];
-    const users = usersData?.users || [];
+    const allSubjects = allSubjectsData?.subjects || [];
+    const allGroups = allGroupsData?.groups || [];
+    const allUsers = allUsersData?.users || [];
 
     const handleCreateQuiz = () => {
         setSelectedQuiz(null);
@@ -126,28 +143,107 @@ const QuizzesPage = () => {
         });
     };
 
-    const getSubjectName = (id?: number) => subjects.find((s: Subject) => s.id === id)?.name || '-';
-    const getGroupName = (id?: number) => groups.find((g: Group) => g.id === id)?.name || '-';
+    const getUserDisplayName = (u: User) => {
+        if (u.teacher?.full_name) return u.teacher.full_name;
+        if (u.student?.full_name) return u.student.full_name;
+        return u.username;
+    };
+
+    const getSubjectName = (id?: number) => allSubjects.find((s: Subject) => s.id === id)?.name || '-';
+    const getGroupName = (id?: number) => allGroups.find((g: Group) => g.id === id)?.name || '-';
+
+    const clearFilters = () => {
+        setFilterSubjectId(undefined);
+        setFilterGroupId(undefined);
+        setFilterUserId(undefined);
+        setFilterIsActive(undefined);
+        setSearchTerm('');
+    };
+
+    const hasActiveFilters = filterSubjectId !== undefined || filterGroupId !== undefined || filterUserId !== undefined || filterIsActive !== undefined || searchTerm !== '';
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-end">
-                <div className="flex gap-2">
-                    <div className="relative">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Testlarni qidiring..."
-                            className="pl-8 w-[250px]"
-                            value={searchTerm}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                        />
+            <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                    <h1 className="text-2xl font-bold">Testlar</h1>
+                    <div className="flex gap-2">
+                        <div className="relative">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Testlarni qidiring..."
+                                className="pl-8 w-[250px]"
+                                value={searchTerm}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <Button onClick={handleCreateQuiz}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Test yaratish
+                        </Button>
                     </div>
-                    <Button onClick={handleCreateQuiz}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Test yaratish
-                    </Button>
                 </div>
+
+                {/* Filters */}
+                <Card>
+                    <CardContent className="p-4">
+                        <div className="flex flex-wrap gap-4 items-end">
+                            <div className="flex flex-col gap-2 min-w-[200px] flex-1">
+                                <label className="text-sm font-medium">Fan bo'yicha filtri</label>
+                                <Combobox
+                                    options={allSubjects.map(s => ({ value: s.id.toString(), label: s.name }))}
+                                    value={filterSubjectId?.toString()}
+                                    onChange={(val) => setFilterSubjectId(val ? parseInt(val) : undefined)}
+                                    placeholder="Barcha fanlar"
+                                    searchPlaceholder="Fanni qidirish..."
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2 min-w-[200px] flex-1">
+                                <label className="text-sm font-medium">Guruh bo'yicha filtri</label>
+                                <Combobox
+                                    options={allGroups.map(g => ({ value: g.id.toString(), label: g.name }))}
+                                    value={filterGroupId?.toString()}
+                                    onChange={(val) => setFilterGroupId(val ? parseInt(val) : undefined)}
+                                    placeholder="Barcha guruhlar"
+                                    searchPlaceholder="Guruhni qidirish..."
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2 min-w-[200px] flex-1">
+                                <label className="text-sm font-medium">Foydalanuvchi bo'yicha filtri</label>
+                                <Combobox
+                                    options={allUsers.map(u => ({ value: u.id.toString(), label: getUserDisplayName(u) }))}
+                                    value={filterUserId?.toString()}
+                                    onChange={(val) => setFilterUserId(val ? parseInt(val) : undefined)}
+                                    placeholder="Barcha foydalanuvchilar"
+                                    searchPlaceholder="Foydalanuvchini qidirish..."
+                                />
+                            </div>
+                            <div className="flex flex-col gap-2 w-[150px]">
+                                <label className="text-sm font-medium">Holat</label>
+                                <select
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                    value={filterIsActive === undefined ? 'all' : filterIsActive.toString()}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setFilterIsActive(val === 'all' ? undefined : val === 'true');
+                                    }}
+                                >
+                                    <option value="all">Barchasi</option>
+                                    <option value="true">Faol</option>
+                                    <option value="false">Faol emas</option>
+                                </select>
+                            </div>
+                            {hasActiveFilters && (
+                                <Button variant="ghost" onClick={clearFilters} className="mb-0.5">
+                                    <X className="mr-2 h-4 w-4" />
+                                    Tozalash
+                                </Button>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
+
 
             <Card>
                 <CardContent>
@@ -158,7 +254,7 @@ const QuizzesPage = () => {
                     ) : quizzes.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                             <BookOpen className="h-12 w-12 mb-4 opacity-20" />
-                            <p>Testlar topilmadi. Boshlash uchun yangi test yarating.</p>
+                            <p>Testlar topilmadi. {hasActiveFilters ? 'Filtrlarni o\'zgartirib ko\'ring.' : 'Boshlash uchun yangi test yarating.'}</p>
                         </div>
                     ) : (
                         <Table>
@@ -233,9 +329,7 @@ const QuizzesPage = () => {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 quiz={selectedQuiz}
-                subjects={subjects}
-                groups={groups}
-                users={users}
+                users={allUsers}
                 onSuccess={handleSuccess}
             />
             <ConfirmDialog
@@ -255,16 +349,12 @@ const QuizModal = ({
     isOpen,
     onClose,
     quiz,
-    subjects,
-    groups,
     users,
     onSuccess,
 }: {
     isOpen: boolean;
     onClose: () => void;
     quiz: Quiz | null;
-    subjects: Subject[];
-    groups: Group[];
     users: User[];
     onSuccess: () => void;
 }) => {
@@ -274,6 +364,7 @@ const QuizModal = ({
         reset,
         setValue,
         watch,
+        control,
         formState: { errors },
     } = useForm<QuizFormValues>({
         resolver: zodResolver(quizSchema),
@@ -288,6 +379,20 @@ const QuizModal = ({
     const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
     const isActive = watch('is_active');
+    const selectedUserId = watch('user_id');
+
+    // Fetch dependent data based on selected user
+    const { data: userSubjectsData } = useSubjects(1, 100, '', selectedUserId ? parseInt(selectedUserId) : undefined);
+    const { data: userGroupsData } = useGroups(1, 100, '', selectedUserId ? parseInt(selectedUserId) : undefined);
+
+    const userSubjects = userSubjectsData?.subjects || [];
+    const userGroups = userGroupsData?.groups || [];
+
+    const getUserDisplayName = (u: User) => {
+        if (u.teacher?.full_name) return u.teacher.full_name;
+        if (u.student?.full_name) return u.student.full_name;
+        return u.username;
+    };
 
     useEffect(() => {
         if (quiz) {
@@ -314,6 +419,16 @@ const QuizModal = ({
             });
         }
     }, [quiz, reset, isOpen]);
+
+    // Reset subject and group if user changes (only when manually changing, not initial load)
+    useEffect(() => {
+        if (isOpen && !quiz && selectedUserId) {
+            // Only clear if we are creating new quiz mostly, or be careful not to clear on initial edit load
+            // But since initial load is handled by the effect above with 'reset', this might conflict.
+            // Simplified: If user changes, we should probably clear the child selections if they are no longer valid.
+            // For now, let's leave it manual or simple.
+        }
+    }, [selectedUserId]);
 
     const onSubmit = (data: QuizFormValues) => {
         const payload: QuizCreateRequest = {
@@ -393,42 +508,64 @@ const QuizModal = ({
                 </div>
 
                 <div className="space-y-2">
+                    <label className="text-sm font-medium">O'qituvchi/Foydalanuvchi</label>
+                    <Controller
+                        name="user_id"
+                        control={control}
+                        render={({ field }) => (
+                            <Combobox
+                                options={users.map(u => ({ value: u.id.toString(), label: getUserDisplayName(u) }))}
+                                value={field.value}
+                                onChange={(val) => {
+                                    field.onChange(val);
+                                    // Reset child fields when user changes
+                                    setValue('subject_id', '');
+                                    setValue('group_id', '');
+                                }}
+                                placeholder="Foydalanuvchini tanlang"
+                                searchPlaceholder="Qidirish..."
+                            />
+                        )}
+                    />
+                    {errors.user_id && <p className="text-sm text-red-500">{errors.user_id.message}</p>}
+                </div>
+
+                <div className="space-y-2">
                     <label className="text-sm font-medium">Fan</label>
-                    <select
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        {...register('subject_id')}
-                    >
-                        <option value="">Fanni tanlang</option>
-                        {subjects.map((s) => (
-                            <option key={s.id} value={s.id}>{s.name}</option>
-                        ))}
-                    </select>
+                    <Controller
+                        name="subject_id"
+                        control={control}
+                        render={({ field }) => (
+                            <Combobox
+                                options={userSubjects.map(s => ({ value: s.id.toString(), label: s.name }))}
+                                value={field.value}
+                                onChange={field.onChange}
+                                placeholder={selectedUserId ? "Fanni tanlang" : "Avval foydalanuvchini tanlang"}
+                                searchPlaceholder="Qidirish..."
+                                disabled={!selectedUserId}
+                            />
+                        )}
+                    />
+                    {errors.subject_id && <p className="text-sm text-red-500">{errors.subject_id.message}</p>}
                 </div>
 
                 <div className="space-y-2">
                     <label className="text-sm font-medium">Guruh</label>
-                    <select
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        {...register('group_id')}
-                    >
-                        <option value="">Guruhni tanlang</option>
-                        {groups.map((g) => (
-                            <option key={g.id} value={g.id}>{g.name}</option>
-                        ))}
-                    </select>
-                </div>
-
-                <div className="space-y-2">
-                    <label className="text-sm font-medium">O'qituvchi/Foydalanuvchi</label>
-                    <select
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        {...register('user_id')}
-                    >
-                        <option value="">Foydalanuvchini tanlang</option>
-                        {users.map((u) => (
-                            <option key={u.id} value={u.id}>{u.username}</option>
-                        ))}
-                    </select>
+                    <Controller
+                        name="group_id"
+                        control={control}
+                        render={({ field }) => (
+                            <Combobox
+                                options={userGroups.map(g => ({ value: g.id.toString(), label: g.name }))}
+                                value={field.value}
+                                onChange={field.onChange}
+                                placeholder={selectedUserId ? "Guruhni tanlang" : "Avval foydalanuvchini tanlang"}
+                                searchPlaceholder="Qidirish..."
+                                disabled={!selectedUserId}
+                            />
+                        )}
+                    />
+                    {errors.group_id && <p className="text-sm text-red-500">{errors.group_id.message}</p>}
                 </div>
 
                 <div className="flex justify-end gap-2 pt-4">

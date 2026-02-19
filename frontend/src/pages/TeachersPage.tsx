@@ -11,9 +11,26 @@ import {
     TableRow,
 } from '@/components/ui/Table';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { Loader2, Search, Eye, ArrowLeft } from 'lucide-react';
+import { Loader2, Search, ArrowLeft, Plus, Pencil, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
-import { useTeachers } from '@/hooks/useTeachers';
+import { Modal } from '@/components/ui/Modal';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { useTeachers, useCreateTeacher, useUpdateTeacher, useDeleteTeacher } from '@/hooks/useTeachers';
+import { useKafedras } from '@/hooks/useReferenceData';
+import { useUsers } from '@/hooks/useUsers';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+
+const teacherSchema = z.object({
+    first_name: z.string().min(1, 'Ism kiritilishi shart'),
+    last_name: z.string().min(1, 'Familiya kiritilishi shart'),
+    third_name: z.string().min(1, 'Otasining ismi kiritilishi shart'),
+    kafedra_id: z.number().min(1, 'Kafedra tanlanishi shart'),
+    user_id: z.number().min(1, 'Foydalanuvchi tanlanishi shart'),
+});
+
+type TeacherFormValues = z.infer<typeof teacherSchema>;
 
 const TeachersPage = () => {
     const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
@@ -21,6 +38,9 @@ const TeachersPage = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [teacherToDelete, setTeacherToDelete] = useState<Teacher | null>(null);
     const pageSize = 10;
 
     useEffect(() => {
@@ -32,6 +52,7 @@ const TeachersPage = () => {
     }, [searchTerm]);
 
     const { data: teachersData, isLoading: isTeachersLoading } = useTeachers(currentPage, pageSize, debouncedSearch);
+    const deleteTeacherMutation = useDeleteTeacher();
 
     const teachers = teachersData?.teachers || [];
     const totalPages = teachersData ? Math.ceil(teachersData.total / pageSize) : 1;
@@ -44,6 +65,33 @@ const TeachersPage = () => {
     const handleBackToList = () => {
         setSelectedTeacher(null);
         setViewMode('list');
+    };
+
+    const handleEditClick = (teacher: Teacher, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setSelectedTeacher(teacher);
+        setIsModalOpen(true);
+    };
+
+    const handleDeleteClick = (teacher: Teacher, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setTeacherToDelete(teacher);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!teacherToDelete) return;
+        deleteTeacherMutation.mutate(teacherToDelete.id, {
+            onSuccess: () => {
+                setIsDeleteModalOpen(false);
+                setTeacherToDelete(null);
+            },
+        });
+    };
+
+    const handleSuccess = () => {
+        setIsModalOpen(false);
+        setSelectedTeacher(null);
     };
 
     if (viewMode === 'detail' && selectedTeacher) {
@@ -63,6 +111,10 @@ const TeachersPage = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
+                    <Button onClick={() => { setSelectedTeacher(null); setIsModalOpen(true); }}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        O'qituvchi qo'shish
+                    </Button>
                 </div>
             </div>
             <Card>
@@ -75,7 +127,7 @@ const TeachersPage = () => {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>F.I.SH/Kafedra</TableHead>
+                                    <TableHead>F.I.SH / Kafedra</TableHead>
                                     <TableHead>Foydalanuvchi</TableHead>
                                     <TableHead>Yaratilgan sana</TableHead>
                                     <TableHead className="text-right">Amallar</TableHead>
@@ -83,7 +135,11 @@ const TeachersPage = () => {
                             </TableHeader>
                             <TableBody>
                                 {teachers.map((teacher) => (
-                                    <TableRow key={teacher.id}>
+                                    <TableRow
+                                        key={teacher.id}
+                                        className="cursor-pointer hover:bg-muted/50"
+                                        onClick={() => handleViewTeacher(teacher)}
+                                    >
                                         <TableCell className="font-medium">
                                             <div>{teacher.full_name || teacher.user?.username || 'Noma\'lum'}</div>
                                             {teacher.kafedra && (
@@ -95,9 +151,19 @@ const TeachersPage = () => {
                                         <TableCell>{teacher.user?.username || '-'}</TableCell>
                                         <TableCell>{new Date(teacher.created_at).toLocaleDateString()}</TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="ghost" size="sm" onClick={() => handleViewTeacher(teacher)}>
-                                                <Eye className="h-4 w-4" />
-                                            </Button>
+                                            <div className="flex justify-end gap-2">
+                                                <Button variant="ghost" size="sm" onClick={(e) => handleEditClick(teacher, e)}>
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-destructive hover:text-destructive"
+                                                    onClick={(e) => handleDeleteClick(teacher, e)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -117,6 +183,23 @@ const TeachersPage = () => {
                 totalPages={totalPages}
                 onPageChange={setCurrentPage}
                 isLoading={isTeachersLoading}
+            />
+
+            <TeacherModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                teacher={selectedTeacher}
+                onSuccess={handleSuccess}
+            />
+
+            <ConfirmDialog
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title="O'qituvchini o'chirish"
+                description={`Siz haqiqatan ham "${teacherToDelete?.full_name}" o'qituvchisini o'chirmoqchimisiz? Bu amalni bekor qilib bo'lmaydi.`}
+                confirmText="O'chirish"
+                cancelText="Bekor qilish"
             />
         </div>
     );
@@ -169,7 +252,7 @@ const TeacherDetail = ({ teacher, onBack }: { teacher: Teacher; onBack: () => vo
                         <CardTitle>Kafedra ma'lumotlari</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                         <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-2 gap-2">
                             <span className="font-semibold text-muted-foreground">Kafedra:</span>
                             <span>{teacher.kafedra?.name || '-'}</span>
                         </div>
@@ -181,6 +264,102 @@ const TeacherDetail = ({ teacher, onBack }: { teacher: Teacher; onBack: () => vo
                 </Card>
             </div>
         </div>
+    );
+};
+
+const TeacherModal = ({ isOpen, onClose, teacher, onSuccess }: {
+    isOpen: boolean; onClose: () => void; teacher: Teacher | null; onSuccess: () => void;
+}) => {
+    const { register, handleSubmit, reset, formState: { errors }, setValue, watch } = useForm<TeacherFormValues>({
+        resolver: zodResolver(teacherSchema),
+        defaultValues: { first_name: '', last_name: '', third_name: '', kafedra_id: 0, user_id: 0 },
+    });
+
+    const { data: kafedrasData } = useKafedras();
+    const { data: usersData } = useUsers(1, 100);
+
+    const createMutation = useCreateTeacher();
+    const updateMutation = useUpdateTeacher();
+    const isSubmitting = createMutation.isPending || updateMutation.isPending;
+
+    const kafedras = kafedrasData?.kafedras || [];
+    const users = usersData?.users || [];
+
+    const selectedKafedraId = watch('kafedra_id');
+    const selectedUserId = watch('user_id');
+
+    useEffect(() => {
+        if (teacher) {
+            reset({
+                first_name: teacher.first_name,
+                last_name: teacher.last_name,
+                third_name: teacher.third_name,
+                kafedra_id: teacher.kafedra_id,
+                user_id: teacher.user_id,
+            });
+        } else {
+            reset({ first_name: '', last_name: '', third_name: '', kafedra_id: 0, user_id: 0 });
+        }
+    }, [teacher, reset]);
+
+    const onSubmit = (data: TeacherFormValues) => {
+        if (teacher) {
+            updateMutation.mutate({ id: teacher.id, data }, {
+                onSuccess: () => onSuccess(),
+                onError: () => alert("O'qituvchini yangilashda xatolik"),
+            });
+        } else {
+            createMutation.mutate(data, {
+                onSuccess: () => onSuccess(),
+                onError: () => alert("O'qituvchi yaratishda xatolik"),
+            });
+        }
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title={teacher ? "O'qituvchini tahrirlash" : "O'qituvchi yaratish"}>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <Input label="Familiya" {...register('last_name')} error={errors.last_name?.message} placeholder="Familiyani kiriting" />
+                <Input label="Ism" {...register('first_name')} error={errors.first_name?.message} placeholder="Ismni kiriting" />
+                <Input label="Otasining ismi" {...register('third_name')} error={errors.third_name?.message} placeholder="Otasining ismini kiriting" />
+                <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">Kafedra</label>
+                    <select
+                        value={selectedKafedraId}
+                        onChange={(e) => setValue('kafedra_id', Number(e.target.value))}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                        <option value={0}>Kafedrani tanlang...</option>
+                        {kafedras.map((kafedra) => (
+                            <option key={kafedra.id} value={kafedra.id}>{kafedra.name}</option>
+                        ))}
+                    </select>
+                    {errors.kafedra_id && (
+                        <p className="mt-1 text-xs text-destructive">{errors.kafedra_id.message}</p>
+                    )}
+                </div>
+                <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">Foydalanuvchi</label>
+                    <select
+                        value={selectedUserId}
+                        onChange={(e) => setValue('user_id', Number(e.target.value))}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                        <option value={0}>Foydalanuvchini tanlang...</option>
+                        {users.map((user) => (
+                            <option key={user.id} value={user.id}>{user.username}</option>
+                        ))}
+                    </select>
+                    {errors.user_id && (
+                        <p className="mt-1 text-xs text-destructive">{errors.user_id.message}</p>
+                    )}
+                </div>
+                <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={onClose}>Bekor qilish</Button>
+                    <Button type="submit" isLoading={isSubmitting}>{teacher ? 'Yangilash' : 'Yaratish'}</Button>
+                </div>
+            </form>
+        </Modal>
     );
 };
 

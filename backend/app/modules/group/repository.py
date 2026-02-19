@@ -3,7 +3,9 @@ import logging
 from fastapi import HTTPException, status
 from app.models.group.model import Group
 from sqlalchemy import func, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.group_teachers.model import GroupTeacher
 
 from .schemas import (
     GroupCreateRequest,
@@ -57,7 +59,12 @@ class GroupRepository:
     async def list_groups(
         self, session: AsyncSession, request: GroupListRequest
     ) -> GroupListResponse:
-        stmt = select(Group).offset(request.offset).limit(request.limit)
+        stmt = select(Group)
+        
+        if request.teacher_id:
+             stmt = stmt.join(GroupTeacher, Group.id == GroupTeacher.group_id).where(GroupTeacher.teacher_id == request.teacher_id)
+
+        stmt = stmt.offset(request.offset).limit(request.limit)
 
         if request.name:
             stmt = stmt.where(Group.name.ilike(f"%{request.name}%"))
@@ -69,6 +76,8 @@ class GroupRepository:
         groups = result.scalars().all()
 
         count_stmt = select(func.count()).select_from(Group)
+        if request.teacher_id:
+            count_stmt = count_stmt.join(GroupTeacher, Group.id == GroupTeacher.group_id).where(GroupTeacher.teacher_id == request.teacher_id)
         if request.name:
             count_stmt = count_stmt.where(Group.name.ilike(f"%{request.name}%"))
         if request.faculty_id:

@@ -78,7 +78,11 @@ class UserRepository:
         # 1. Запрос на получение моделей
         stmt = (
             select(User)
-            .options(selectinload(User.roles))
+            .options(
+                selectinload(User.roles),
+                selectinload(User.teacher),
+                selectinload(User.student)
+            )
             .offset(request.offset)
             .limit(request.limit)
         )
