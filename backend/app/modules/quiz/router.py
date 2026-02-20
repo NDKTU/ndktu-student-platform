@@ -14,6 +14,7 @@ from .schemas import (
     QuizListRequest,
     QuizListResponse,
 )
+from app.models.user.model import User
 # from app.core.cache import clear_cache, custom_key_builder
 
 logger = logging.getLogger(__name__)
@@ -57,10 +58,10 @@ async def get_quiz(
 async def list_quizzes(
     data: QuizListRequest = Depends(),
     session: AsyncSession = Depends(db_helper.session_getter),
-    _: PermissionRequired = Depends(PermissionRequired("read:quiz")),
+    current_user: User = Depends(PermissionRequired("read:quiz")),
 ):
     return await get_quiz_repository.list_quizzes(
-        session=session, request=data
+        session=session, request=data, current_user=current_user
     )
 
 

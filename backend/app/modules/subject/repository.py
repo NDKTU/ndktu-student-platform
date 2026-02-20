@@ -5,6 +5,8 @@ from app.models.subject.model import Subject
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.subject_teacher.model import SubjectTeacher
+from app.models.user.model import User
+from app.models.teacher.model import Teacher
 
 from .schemas import (
     SubjectCreateRequest,
@@ -56,9 +58,25 @@ class SubjectRepository:
         return subject
 
     async def list_subjects(
-        self, session: AsyncSession, request: SubjectListRequest
+        self, session: AsyncSession, request: SubjectListRequest, current_user: User
     ) -> SubjectListResponse:
         stmt = select(Subject)
+
+        is_teacher = any(role.name.lower() == "teacher" for role in current_user.roles)
+        teacher_filter = None
+
+        if is_teacher:
+            st_stmt = select(SubjectTeacher.subject_id).join(Teacher, Teacher.id == SubjectTeacher.teacher_id).where(Teacher.user_id == current_user.id)
+            st_result = await session.execute(st_stmt)
+            allowed_subject_ids = st_result.scalars().all()
+
+            if allowed_subject_ids:
+                teacher_filter = Subject.id.in_(allowed_subject_ids)
+            else:
+                teacher_filter = Subject.id == -1
+
+        if teacher_filter is not None:
+            stmt = stmt.where(teacher_filter)
 
         if request.teacher_id:
              stmt = stmt.join(SubjectTeacher, Subject.id == SubjectTeacher.subject_id).where(SubjectTeacher.teacher_id == request.teacher_id)
@@ -72,6 +90,10 @@ class SubjectRepository:
         subjects = result.scalars().all()
 
         count_stmt = select(func.count()).select_from(Subject)
+
+        if teacher_filter is not None:
+            count_stmt = count_stmt.where(teacher_filter)
+
         if request.teacher_id:
              count_stmt = count_stmt.join(SubjectTeacher, Subject.id == SubjectTeacher.subject_id).where(SubjectTeacher.teacher_id == request.teacher_id)
 

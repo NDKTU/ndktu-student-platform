@@ -4,9 +4,12 @@ from fastapi import HTTPException, status
 from app.models.quiz.model import Quiz
 from app.models.question.model import Question
 from app.models.quiz_questions.model import QuizQuestion
-from sqlalchemy import func, select
+from sqlalchemy import func, select, or_
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.user.model import User
+from app.models.teacher.model import Teacher
+from app.models.subject_teacher.model import SubjectTeacher
 
 from .schemas import (
     QuizCreateRequest,
@@ -96,9 +99,37 @@ class QuizRepository:
         return quiz
 
     async def list_quizzes(
-        self, session: AsyncSession, request: QuizListRequest
+        self, session: AsyncSession, request: QuizListRequest, current_user: User
     ) -> QuizListResponse:
         stmt = select(Quiz).offset(request.offset).limit(request.limit)
+
+        is_teacher = any(role.name.lower() == "teacher" for role in current_user.roles)
+        teacher_filter = None
+
+        if is_teacher:
+            # Check teacher's groups
+            gt_stmt = select(GroupTeacher.group_id).where(GroupTeacher.teacher_id == current_user.id)
+            gt_result = await session.execute(gt_stmt)
+            allowed_group_ids = gt_result.scalars().all()
+
+            # Check teacher's subjects
+            st_stmt = select(SubjectTeacher.subject_id).join(Teacher, Teacher.id == SubjectTeacher.teacher_id).where(Teacher.user_id == current_user.id)
+            st_result = await session.execute(st_stmt)
+            allowed_subject_ids = st_result.scalars().all()
+
+            conditions = []
+            if allowed_group_ids:
+                conditions.append(Quiz.group_id.in_(allowed_group_ids))
+            if allowed_subject_ids:
+                conditions.append(Quiz.subject_id.in_(allowed_subject_ids))
+            
+            if conditions:
+                teacher_filter = or_(*conditions)
+            else:
+                teacher_filter = Quiz.id == -1
+
+        if teacher_filter is not None:
+            stmt = stmt.where(teacher_filter)
 
         if request.title:
             stmt = stmt.where(Quiz.title.ilike(f"%{request.title}%"))
@@ -119,6 +150,10 @@ class QuizRepository:
         quizzes = result.scalars().all()
 
         count_stmt = select(func.count()).select_from(Quiz)
+
+        if teacher_filter is not None:
+            count_stmt = count_stmt.where(teacher_filter)
+
         if request.title:
             count_stmt = count_stmt.where(Quiz.title.ilike(f"%{request.title}%"))
         if request.user_id:

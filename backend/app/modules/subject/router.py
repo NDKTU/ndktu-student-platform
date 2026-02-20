@@ -15,6 +15,7 @@ from .schemas import (
     SubjectListRequest,
     SubjectListResponse,
 )
+from app.models.user.model import User
 # from app.core.cache import clear_cache, custom_key_builder
 
 logger = logging.getLogger(__name__)
@@ -58,10 +59,10 @@ async def get_subject(
 async def list_subjects(
     data: SubjectListRequest = Depends(),
     session: AsyncSession = Depends(db_helper.session_getter),
-    _: PermissionRequired = Depends(PermissionRequired("read:subject")),
+    current_user: User = Depends(PermissionRequired("read:subject")),
 ):
     return await get_subject_repository.list_subjects(
-        session=session, request=data
+        session=session, request=data, current_user=current_user
     )
 
 
