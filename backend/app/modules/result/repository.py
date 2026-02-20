@@ -3,9 +3,12 @@ import logging
 from fastapi import HTTPException, status
 from app.models.results.model import Result
 from app.models.user.model import User
-from sqlalchemy import func, select
+from sqlalchemy import func, select, or_
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.teacher.model import Teacher
+from app.models.group_teachers.model import GroupTeacher
+from app.models.subject_teacher.model import SubjectTeacher
 
 from .schemas import (
     ResultListRequest,
@@ -36,7 +39,7 @@ class ResultRepository:
         return obj
 
     async def list_results(
-        self, session: AsyncSession, request: ResultListRequest
+        self, session: AsyncSession, request: ResultListRequest, current_user: User
     ) -> ResultListResponse:
         stmt = select(Result).options(
             selectinload(Result.user).selectinload(User.student),
@@ -44,6 +47,35 @@ class ResultRepository:
             selectinload(Result.subject),
             selectinload(Result.group),
         ).offset(request.offset).limit(request.limit)
+
+        is_teacher = any(role.name.lower() == "teacher" for role in current_user.roles)
+        teacher_filter = None
+
+        if is_teacher:
+            # Check teacher's groups
+            gt_stmt = select(GroupTeacher.group_id).where(GroupTeacher.teacher_id == current_user.id)
+            gt_result = await session.execute(gt_stmt)
+            allowed_group_ids = gt_result.scalars().all()
+
+            # Check teacher's subjects
+            st_stmt = select(SubjectTeacher.subject_id).join(Teacher, Teacher.id == SubjectTeacher.teacher_id).where(Teacher.user_id == current_user.id)
+            st_result = await session.execute(st_stmt)
+            allowed_subject_ids = st_result.scalars().all()
+
+            # Create an OR condition for allowed groups or subjects
+            conditions = []
+            if allowed_group_ids:
+                conditions.append(Result.group_id.in_(allowed_group_ids))
+            if allowed_subject_ids:
+                conditions.append(Result.subject_id.in_(allowed_subject_ids))
+            
+            if conditions:
+                teacher_filter = or_(*conditions)
+            else:
+                teacher_filter = Result.id == -1 # User is teacher but has no groups or subjects, show nothing
+
+        if teacher_filter is not None:
+            stmt = stmt.where(teacher_filter)
 
         if request.user_id:
             stmt = stmt.where(Result.user_id == request.user_id)
@@ -64,6 +96,10 @@ class ResultRepository:
         results = result.scalars().all()
 
         count_stmt = select(func.count()).select_from(Result)
+
+        if teacher_filter is not None:
+            count_stmt = count_stmt.where(teacher_filter)
+
         if request.user_id:
             count_stmt = count_stmt.where(Result.user_id == request.user_id)
         if request.quiz_id:

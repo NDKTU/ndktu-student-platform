@@ -119,26 +119,8 @@ const TeachersPage = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold tracking-tight">O'qituvchilar</h1>
-                <div className="flex gap-2">
-                    <div className="relative">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="O'qituvchilarni qidirish..."
-                            className="pl-8 w-[250px]"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                    <Button onClick={() => { setSelectedTeacher(null); setIsModalOpen(true); }}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        O'qituvchi qo'shish
-                    </Button>
-                </div>
-            </div>
             <Card>
-                <CardContent>
+                <CardContent className="pt-6">
                     {isTeachersLoading ? (
                         <div className="flex justify-center p-8">
                             <Loader2 className="h-8 w-8 animate-spin" />
@@ -150,7 +132,23 @@ const TeachersPage = () => {
                                     <TableHead>F.I.SH / Kafedra</TableHead>
                                     <TableHead>Foydalanuvchi</TableHead>
                                     <TableHead>Yaratilgan sana</TableHead>
-                                    <TableHead className="text-right">Amallar</TableHead>
+                                    <TableHead className="text-right">
+                                        <div className="flex items-center justify-end gap-3">
+                                            <div className="relative font-normal">
+                                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    placeholder="O'qituvchilarni qidirish..."
+                                                    className="pl-8 w-[200px] h-9"
+                                                    value={searchTerm}
+                                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                                />
+                                            </div>
+                                            <Button size="sm" onClick={() => { setSelectedTeacher(null); setIsModalOpen(true); }}>
+                                                <Plus className="mr-1 h-4 w-4" />
+                                                O'qituvchi qo'shish
+                                            </Button>
+                                        </div>
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -298,6 +296,42 @@ const TeacherDetail = ({ teacher, onBack }: { teacher: Teacher; onBack: () => vo
                             <span className="font-semibold text-muted-foreground">Fakultet ID:</span>
                             <span>{teacher.kafedra?.faculty_id || '-'}</span>
                         </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Biriktirilgan fanlar</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {teacher.subject_teachers && teacher.subject_teachers.length > 0 ? (
+                            <ul className="list-disc list-inside space-y-1 text-sm">
+                                {teacher.subject_teachers.map(st => (
+                                    <li key={st.subject_id}>{st.subject?.name || `ID: ${st.subject_id}`}</li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <span className="text-sm text-muted-foreground">Biriktirilgan fanlar yo'q.</span>
+                        )}
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Biriktirilgan guruhlar</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {teacher.user?.group_teachers && teacher.user.group_teachers.length > 0 ? (
+                            <ul className="list-disc list-inside space-y-1 text-sm">
+                                {teacher.user.group_teachers.map(gt => (
+                                    <li key={gt.group_id}>{gt.group?.name || `ID: ${gt.group_id}`}</li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <span className="text-sm text-muted-foreground">Biriktirilgan guruhlar yo'q.</span>
+                        )}
                     </CardContent>
                 </Card>
             </div>

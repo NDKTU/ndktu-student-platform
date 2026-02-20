@@ -51,6 +51,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }: SidebarProps) => {
 
     const teacherNavigation = [
         { name: 'Savollar', href: '/questions', icon: FileQuestion },
+        { name: 'Natijalar', href: '/results', icon: FileText },
     ];
 
     const studentNavigation = [

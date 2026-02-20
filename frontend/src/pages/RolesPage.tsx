@@ -15,7 +15,8 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { usePermissions, useAssignPermissions } from '@/hooks/useReferenceData';
-import { ExpandableTags } from '@/components/ui/ExpandableTags';
+import { useNavigate } from 'react-router-dom';
+
 
 const roleSchema = z.object({
     name: z.string().min(1, 'Role name is required'),
@@ -36,6 +37,7 @@ const RolesPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const pageSize = 10;
+    const navigate = useNavigate();
 
     const fetchData = async () => {
         try {
@@ -92,25 +94,8 @@ const RolesPage = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-end">
-                <div className="flex gap-2">
-                    <div className="relative">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Search roles..."
-                            className="pl-8 w-[250px]"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                    <Button onClick={() => { setSelectedRole(null); setIsModalOpen(true); }}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Role
-                    </Button>
-                </div>
-            </div>
             <Card>
-                <CardContent>
+                <CardContent className="pt-6">
                     {isLoading ? (
                         <div className="flex justify-center p-8">
                             <Loader2 className="h-8 w-8 animate-spin" />
@@ -119,11 +104,27 @@ const RolesPage = () => {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>ID</TableHead>
+                                    <TableHead className="w-[80px]">ID</TableHead>
                                     <TableHead>Name</TableHead>
                                     <TableHead>Permissions</TableHead>
                                     <TableHead>Created At</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead className="text-right">
+                                        <div className="flex items-center justify-end gap-3">
+                                            <div className="relative font-normal">
+                                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    placeholder="Search roles..."
+                                                    className="pl-8 w-[200px] h-9"
+                                                    value={searchTerm}
+                                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                                />
+                                            </div>
+                                            <Button size="sm" onClick={() => { setSelectedRole(null); setIsModalOpen(true); }}>
+                                                <Plus className="mr-1 h-4 w-4" />
+                                                Add Role
+                                            </Button>
+                                        </div>
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -132,7 +133,25 @@ const RolesPage = () => {
                                         <TableCell>{role.id}</TableCell>
                                         <TableCell className="font-medium">{role.name}</TableCell>
                                         <TableCell>
-                                            <ExpandableTags items={role.permissions || []} limit={5} />
+                                            <div className="flex flex-wrap gap-1 max-w-[300px] items-center">
+                                                {role.permissions && role.permissions.length > 0 ? (
+                                                    <>
+                                                        <span className="inline-flex items-center rounded-full border border-border/50 px-2.5 py-0.5 text-xs font-semibold text-foreground bg-background">
+                                                            {role.permissions[0].name}
+                                                        </span>
+                                                        {role.permissions.length > 1 && (
+                                                            <button 
+                                                                onClick={() => navigate(`/roles/${role.id}/permissions`)}
+                                                                className="inline-flex items-center rounded-full bg-secondary/50 hover:bg-secondary px-2.5 py-0.5 text-xs font-semibold transition-colors text-secondary-foreground cursor-pointer"
+                                                            >
+                                                                +{role.permissions.length - 1} ko'proq
+                                                            </button>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <span>-</span>
+                                                )}
+                                            </div>
                                         </TableCell>
                                         <TableCell>{role.created_at ? new Date(role.created_at).toLocaleDateString() : '-'}</TableCell>
                                         <TableCell className="text-right">

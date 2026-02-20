@@ -35,6 +35,15 @@ class UserCreateRequest(BaseModel):
 
 class UserUpdateRequest(BaseModel):
     username: str | None = None
+    password: str | None = None
+
+    @field_validator("password", mode="before")
+    def validate_password(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        if not value.strip():
+            raise ValueError("Password cannot be empty")
+        return hash_password(value.strip())
 
 
 class UserRoleAssignRequest(BaseModel):

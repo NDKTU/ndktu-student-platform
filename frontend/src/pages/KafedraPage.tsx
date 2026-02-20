@@ -76,25 +76,8 @@ const KafedraPage = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-end">
-                <div className="flex gap-2">
-                    <div className="relative">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Kafedralarni qidirish..."
-                            className="pl-8 w-[250px]"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                    <Button onClick={() => { setSelectedKafedra(null); setIsModalOpen(true); }}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Kafedra qo'shish
-                    </Button>
-                </div>
-            </div>
             <Card>
-                <CardContent>
+                <CardContent className="pt-6">
                     {isKafedrasLoading ? (
                         <div className="flex justify-center p-8">
                             <Loader2 className="h-8 w-8 animate-spin" />
@@ -103,11 +86,27 @@ const KafedraPage = () => {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>ID</TableHead>
+                                    <TableHead className="w-[80px]">ID</TableHead>
                                     <TableHead>Nomi</TableHead>
                                     <TableHead>Fakultet</TableHead>
                                     <TableHead>Yaratilgan sana</TableHead>
-                                    <TableHead className="text-right">Amallar</TableHead>
+                                    <TableHead className="text-right">
+                                        <div className="flex items-center justify-end gap-3">
+                                            <div className="relative font-normal">
+                                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    placeholder="Kafedralarni qidirish..."
+                                                    className="pl-8 w-[200px] h-9"
+                                                    value={searchTerm}
+                                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                                />
+                                            </div>
+                                            <Button size="sm" onClick={() => { setSelectedKafedra(null); setIsModalOpen(true); }}>
+                                                <Plus className="mr-1 h-4 w-4" />
+                                                Kafedra qo'shish
+                                            </Button>
+                                        </div>
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>

@@ -26,8 +26,7 @@ import { ExpandableTags } from '@/components/ui/ExpandableTags';
 const userSchema = z.object({
     username: z.string().min(3, 'Username must be at least 3 characters'),
     password: z.string().optional(),
-    role_ids: z.array(z.number()).min(1, 'Kamida bitta rol tanlanishi shart'),
-    is_active: z.boolean().default(true),
+    role_ids: z.array(z.coerce.number()).min(1, 'Kamida bitta rol tanlanishi shart'),
 });
 
 type UserFormValues = z.infer<typeof userSchema>;
@@ -91,30 +90,8 @@ const UsersPage = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    {/* Headers removed as per user request */}
-                </div>
-                <div className="flex gap-2">
-                    <div className="relative">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Foydalanuvchilarni qidirish..."
-                            className="pl-8 w-[250px]"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-
-                    <Button onClick={() => { setSelectedUser(null); setIsModalOpen(true); }}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Foydalanuvchi qo'shish
-                    </Button>
-                </div>
-            </div>
-
             <Card>
-                <CardContent>
+                <CardContent className="pt-6">
                     {isUsersLoading ? (
                         <div className="flex justify-center p-8">
                             <Loader2 className="h-8 w-8 animate-spin" />
@@ -127,12 +104,28 @@ const UsersPage = () => {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>ID</TableHead>
+                                    <TableHead className="w-[80px]">ID</TableHead>
                                     <TableHead>Foydalanuvchi nomi (Username)</TableHead>
                                     <TableHead>Rol</TableHead>
 
                                     <TableHead>Yaratilgan sana</TableHead>
-                                    <TableHead className="text-right">Amallar</TableHead>
+                                    <TableHead className="text-right">
+                                        <div className="flex items-center justify-end gap-3">
+                                            <div className="relative font-normal">
+                                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    placeholder="Foydalanuvchilarni qidirish..."
+                                                    className="pl-8 w-[200px] h-9"
+                                                    value={searchTerm}
+                                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                                />
+                                            </div>
+                                            <Button size="sm" onClick={() => { setSelectedUser(null); setIsModalOpen(true); }}>
+                                                <Plus className="mr-1 h-4 w-4" />
+                                                Foydalanuvchi qo'shish
+                                            </Button>
+                                        </div>
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -229,7 +222,6 @@ const UserModal = ({
             username: '',
             password: '',
             role_ids: [],
-            is_active: true,
         },
     });
 
@@ -244,31 +236,28 @@ const UserModal = ({
                 username: user.username,
                 password: '', // Don't fill password on edit
                 role_ids: user.roles?.map(r => r.id) || [],
-                is_active: user.is_active,
             });
         } else {
             reset({
                 username: '',
                 password: '',
                 role_ids: [],
-                is_active: true,
             });
         }
     }, [user, reset]);
 
     const onSubmit = (data: UserFormValues) => {
         if (user) {
-            const payload = {
+            const payload: any = {
                 username: data.username,
-                is_active: data.is_active,
             };
+            if (data.password) {
+                payload.password = data.password;
+            }
 
             updateMutation.mutate({ id: user.id, data: payload }, {
                 onSuccess: (updatedUser: any) => {
-                    assignRolesMutation.mutate({ user_id: updatedUser.id, role_ids: data.role_ids }, {
-                        onSuccess: () => onSuccess(updatedUser),
-                        onError: () => alert('Foydalanuvchi rollarini yangilashda xatolik yuz berdi')
-                    });
+                    onSuccess(updatedUser);
                 },
                 onError: (error) => {
                     console.error('Failed to update user', error);
@@ -285,7 +274,6 @@ const UserModal = ({
                 username: data.username,
                 password: data.password,
                 roles: data.role_ids.map(id => ({ name: roles.find(r => r.id === id)?.name || '' })),
-                is_active: data.is_active,
             };
 
             createMutation.mutate(payload, {
@@ -311,47 +299,42 @@ const UserModal = ({
                     error={errors.username?.message}
                 />
 
-                <Input
-                    label={user ? "Parol (o'zgartirish uchun kiriting)" : "Parol"}
-                    type="password"
-                    {...register('password')}
-                    error={errors.password?.message}
-                />
+                {!user && (
+                    <>
+                        <Input
+                            label="Parol"
+                            type="password"
+                            autoComplete="new-password"
+                            {...register('password')}
+                            error={errors.password?.message}
+                        />
 
-                <div className="space-y-2">
-                    <label className="text-sm font-medium">Rollar</label>
-                    <div className="grid grid-cols-2 gap-2 max-h-[150px] overflow-y-auto p-2 border rounded-md">
-                        {roles.map((role) => (
-                            <div key={role.id} className="flex items-center space-x-2">
-                                <input
-                                    type="checkbox"
-                                    id={`role-${role.id}`}
-                                    value={role.id}
-                                    {...register('role_ids', { valueAsNumber: true })}
-                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                                />
-                                <label htmlFor={`role-${role.id}`} className="text-sm cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis">
-                                    {role.name}
-                                </label>
+                        <div className="space-y-2 relative z-0">
+                            <label className="text-sm font-medium">Rollar</label>
+                            <div className="grid grid-cols-2 gap-2 max-h-[150px] overflow-y-auto p-2 border rounded-md">
+                                {roles.map((role) => (
+                                    <div key={role.id} className="flex items-center space-x-2">
+                                        <input
+                                            type="checkbox"
+                                            id={`role-${role.id}`}
+                                            value={role.id}
+                                            {...register('role_ids')}
+                                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                        />
+                                        <label htmlFor={`role-${role.id}`} className="text-sm cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis">
+                                            {role.name}
+                                        </label>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
-                    {errors.role_ids && (
-                        <p className="text-xs text-destructive">{errors.role_ids.message}</p>
-                    )}
-                </div>
+                            {errors.role_ids && (
+                                <p className="text-xs text-destructive">{errors.role_ids.message}</p>
+                            )}
+                        </div>
+                    </>
+                )}
 
-                <div className="flex items-center space-x-2">
-                    <input
-                        type="checkbox"
-                        id="is_active"
-                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                        {...register('is_active')}
-                    />
-                    <label htmlFor="is_active" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        Faol hisob
-                    </label>
-                </div>
+
 
                 <div className="flex justify-end gap-2 pt-4">
                     <Button type="button" variant="outline" onClick={onClose}>

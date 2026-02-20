@@ -89,25 +89,8 @@ const PermissionsPage = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-end">
-                <div className="flex gap-2">
-                    <div className="relative">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Search permissions..."
-                            className="pl-8 w-[250px]"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                    <Button onClick={() => { setSelectedPermission(null); setIsModalOpen(true); }}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Permission
-                    </Button>
-                </div>
-            </div>
             <Card>
-                <CardContent>
+                <CardContent className="pt-6">
                     {isLoading ? (
                         <div className="flex justify-center p-8">
                             <Loader2 className="h-8 w-8 animate-spin" />
@@ -116,10 +99,26 @@ const PermissionsPage = () => {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>ID</TableHead>
+                                    <TableHead className="w-[80px]">ID</TableHead>
                                     <TableHead>Name</TableHead>
                                     <TableHead>Created At</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead className="text-right">
+                                        <div className="flex items-center justify-end gap-3">
+                                            <div className="relative font-normal">
+                                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    placeholder="Search permissions..."
+                                                    className="pl-8 w-[200px] h-9"
+                                                    value={searchTerm}
+                                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                                />
+                                            </div>
+                                            <Button size="sm" onClick={() => { setSelectedPermission(null); setIsModalOpen(true); }}>
+                                                <Plus className="mr-1 h-4 w-4" />
+                                                Add Permission
+                                            </Button>
+                                        </div>
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>

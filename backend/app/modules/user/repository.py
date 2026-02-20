@@ -7,6 +7,7 @@ from app.models.student.model import Student
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from app.models.teacher.model import Teacher
 
 from .schemas import (
     UserCreateRequest,
@@ -81,7 +82,7 @@ class UserRepository:
             select(User)
             .options(
                 selectinload(User.roles),
-                selectinload(User.teacher),
+                selectinload(User.teacher).selectinload(Teacher.kafedra),
                 selectinload(User.student).selectinload(Student.group)
             )
             .offset(request.offset)
@@ -128,6 +129,8 @@ class UserRepository:
         # Частичное обновление через Request схему
         if data.username is not None:
             user.username = data.username
+        if data.password is not None:
+            user.password = data.password
 
         await session.commit()
         await session.refresh(user)

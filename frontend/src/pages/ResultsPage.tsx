@@ -29,7 +29,10 @@ const ResultsPage = () => {
     const navigate = useNavigate();
 
     const isStudent = user?.roles?.some(role => role.name.toLowerCase() === 'student');
+    const isTeacher = user?.roles?.some(role => role.name.toLowerCase() === 'teacher');
+    
     const userId = isStudent ? user?.id : undefined;
+    const teacherId = isTeacher ? user?.teacher?.id : undefined;
 
     const [selectedGroup, setSelectedGroup] = useState<string>('');
     const [selectedSubject, setSelectedSubject] = useState<string>('');
@@ -45,8 +48,8 @@ const ResultsPage = () => {
         currentPage, pageSize, userId, parsedGrade, parsedGroup, parsedSubject, parsedQuiz
     );
 
-    const { data: groupsData } = useGroups(1, 100, '');
-    const { data: subjectsData } = useSubjects(1, 100, '');
+    const { data: groupsData } = useGroups(1, 100, '', teacherId);
+    const { data: subjectsData } = useSubjects(1, 100, '', teacherId);
     const { data: quizzesData } = useQuizzes(1, 100);
 
     const groupOptions = groupsData?.groups.map(g => ({ value: String(g.id), label: g.name })) || [];
@@ -76,15 +79,17 @@ const ResultsPage = () => {
             <Card>
                 <CardContent className="pt-6">
                     <div className="flex flex-wrap items-end gap-4">
-                        <div className="w-[200px]">
-                            <label className="text-sm font-medium mb-1.5 block">Guruh</label>
-                            <Combobox
-                                options={groupOptions}
-                                value={selectedGroup}
-                                onChange={setSelectedGroup}
-                                placeholder="Barcha guruhlar"
-                            />
-                        </div>
+                        {!isStudent && (
+                            <div className="w-[200px]">
+                                <label className="text-sm font-medium mb-1.5 block">Guruh</label>
+                                <Combobox
+                                    options={groupOptions}
+                                    value={selectedGroup}
+                                    onChange={setSelectedGroup}
+                                    placeholder="Barcha guruhlar"
+                                />
+                            </div>
+                        )}
                         <div className="w-[200px]">
                             <label className="text-sm font-medium mb-1.5 block">Fan</label>
                             <Combobox
@@ -142,7 +147,7 @@ const ResultsPage = () => {
                                     <TableHead>ID</TableHead>
                                     <TableHead>Talaba</TableHead>
                                     <TableHead>Fan</TableHead>
-                                    <TableHead>Guruh</TableHead>
+                                    {!isStudent && <TableHead>Guruh</TableHead>}
                                     <TableHead>Test</TableHead>
                                     <TableHead>Ball</TableHead>
                                     <TableHead>To'g'ri / Jami</TableHead>
@@ -166,7 +171,7 @@ const ResultsPage = () => {
                                             )}
                                         </TableCell>
                                         <TableCell className="capitalize">{result.subject?.name || '-'}</TableCell>
-                                        <TableCell className="capitalize">{result.group?.name || '-'}</TableCell>
+                                        {!isStudent && <TableCell className="capitalize">{result.group?.name || '-'}</TableCell>}
                                         <TableCell className="capitalize">{result.quiz?.title || `Test ${result.quiz_id}`}</TableCell>
                                         <TableCell>
                                             <span className={

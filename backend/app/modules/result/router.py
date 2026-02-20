@@ -13,6 +13,7 @@ from .schemas import (
     ResultListRequest,
     ResultListResponse,
 )
+from app.models.user.model import User
 # from app.core.cache import clear_cache, custom_key_builder
 
 logger = logging.getLogger(__name__)
@@ -40,10 +41,10 @@ async def get_result(
 async def list_results(
     data: ResultListRequest = Depends(),
     session: AsyncSession = Depends(db_helper.session_getter),
-    _: PermissionRequired = Depends(PermissionRequired("read:result")),
+    current_user: User = Depends(PermissionRequired("read:result")),
 ):
     return await get_result_repository.list_results(
-        session=session, request=data
+        session=session, request=data, current_user=current_user
     )
 
 

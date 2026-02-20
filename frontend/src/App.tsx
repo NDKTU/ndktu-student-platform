@@ -10,6 +10,7 @@ import QuizzesPage from '@/pages/QuizzesPage';
 import ResultsPage from '@/pages/ResultsPage';
 import TeachersPage from '@/pages/TeachersPage';
 import RolesPage from '@/pages/RolesPage';
+import RolePermissionsPage from '@/pages/RolePermissionsPage';
 import PermissionsPage from '@/pages/PermissionsPage';
 import FacultyPage from '@/pages/FacultyPage';
 import KafedraPage from '@/pages/KafedraPage';
@@ -82,6 +83,7 @@ function App() {
                 <Route path="/users" element={<RoleRoute allowedRoles={['admin']}><UsersPage /></RoleRoute>} />
                 <Route path="/teachers" element={<RoleRoute allowedRoles={['admin']}><TeachersPage /></RoleRoute>} />
                 <Route path="/roles" element={<RoleRoute allowedRoles={['admin']}><RolesPage /></RoleRoute>} />
+                <Route path="/roles/:id/permissions" element={<RoleRoute allowedRoles={['admin']}><RolePermissionsPage /></RoleRoute>} />
                 <Route path="/permissions" element={<RoleRoute allowedRoles={['admin']}><PermissionsPage /></RoleRoute>} />
                 <Route path="/faculties" element={<RoleRoute allowedRoles={['admin']}><FacultyPage /></RoleRoute>} />
                 <Route path="/kafedras" element={<RoleRoute allowedRoles={['admin']}><KafedraPage /></RoleRoute>} />
@@ -98,8 +100,8 @@ function App() {
 
                 {/* Admin + Student routes */}
                 <Route path="/quiz-test" element={<RoleRoute allowedRoles={['admin', 'student']}><QuizTestPage /></RoleRoute>} />
-                <Route path="/results" element={<RoleRoute allowedRoles={['admin', 'student']}><ResultsPage /></RoleRoute>} />
-                <Route path="/results/answers" element={<RoleRoute allowedRoles={['admin', 'student']}><UserAnswersPage /></RoleRoute>} />
+                <Route path="/results" element={<RoleRoute allowedRoles={['admin', 'student', 'teacher']}><ResultsPage /></RoleRoute>} />
+                <Route path="/results/answers" element={<RoleRoute allowedRoles={['admin', 'student', 'teacher']}><UserAnswersPage /></RoleRoute>} />
               </Route>
             </Route>
 
