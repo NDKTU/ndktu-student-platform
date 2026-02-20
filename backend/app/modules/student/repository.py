@@ -67,6 +67,12 @@ class StudentRepository:
                 | (Student.student_id_number.ilike(f"%{request.search}%"))
             )
 
+        if request.user_id is not None:
+            stmt = stmt.where(Student.user_id == request.user_id)
+        
+        if request.group_id is not None:
+            stmt = stmt.where(Student.group_id == request.group_id)
+
         result = await session.execute(stmt)
         students = result.scalars().all()
 
@@ -77,6 +83,12 @@ class StudentRepository:
                 | (Student.last_name.ilike(f"%{request.search}%"))
                 | (Student.student_id_number.ilike(f"%{request.search}%"))
             )
+
+        if request.user_id is not None:
+            count_stmt = count_stmt.where(Student.user_id == request.user_id)
+        
+        if request.group_id is not None:
+            count_stmt = count_stmt.where(Student.group_id == request.group_id)
 
         total_result = await session.execute(count_stmt)
         total = total_result.scalar() or 0

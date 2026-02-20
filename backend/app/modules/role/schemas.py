@@ -16,11 +16,17 @@ class RolePermissionAssignRequest(BaseModel):
     )
 
 
+class RolePermissionInfo(BaseModel):
+    id: int
+    name: str
+    model_config = ConfigDict(from_attributes=True)
+
 class RoleCreateResponse(BaseModel):
     id: int
     name: str
     created_at: datetime
     updated_at: datetime
+    permissions: list[RolePermissionInfo] = []
 
     model_config = ConfigDict(from_attributes=True)
 

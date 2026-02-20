@@ -273,7 +273,7 @@ const QuizzesPage = () => {
                             <TableBody>
                                 {quizzes.map((quiz) => (
                                     <TableRow key={quiz.id}>
-                                        <TableCell className="font-medium">{quiz.title}</TableCell>
+                                        <TableCell className="font-medium capitalize">{quiz.title}</TableCell>
                                         <TableCell>{quiz.question_number}</TableCell>
                                         <TableCell>{quiz.duration} daq</TableCell>
                                         <TableCell><span className="font-mono bg-muted px-2 py-1 rounded">{quiz.pin}</span></TableCell>
@@ -289,8 +289,8 @@ const QuizzesPage = () => {
                                                 </span>
                                             </div>
                                         </TableCell>
-                                        <TableCell>{getSubjectName(quiz.subject_id)}</TableCell>
-                                        <TableCell>{getGroupName(quiz.group_id)}</TableCell>
+                                        <TableCell className="capitalize">{getSubjectName(quiz.subject_id)}</TableCell>
+                                        <TableCell className="capitalize">{getGroupName(quiz.group_id)}</TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
                                                 <Button
@@ -383,10 +383,10 @@ const QuizModal = ({
 
     // Fetch dependent data based on selected user
     const { data: userSubjectsData } = useSubjects(1, 100, '', selectedUserId ? parseInt(selectedUserId) : undefined);
-    const { data: userGroupsData } = useGroups(1, 100, '', selectedUserId ? parseInt(selectedUserId) : undefined);
+    const { data: allGroupsData } = useGroups(1, 100, '');
 
     const userSubjects = userSubjectsData?.subjects || [];
-    const userGroups = userGroupsData?.groups || [];
+    const allGroups = allGroupsData?.groups || [];
 
     const getUserDisplayName = (u: User) => {
         if (u.teacher?.full_name) return u.teacher.full_name;
@@ -420,15 +420,12 @@ const QuizModal = ({
         }
     }, [quiz, reset, isOpen]);
 
-    // Reset subject and group if user changes (only when manually changing, not initial load)
+    // Reset subject if user changes
     useEffect(() => {
         if (isOpen && !quiz && selectedUserId) {
-            // Only clear if we are creating new quiz mostly, or be careful not to clear on initial edit load
-            // But since initial load is handled by the effect above with 'reset', this might conflict.
-            // Simplified: If user changes, we should probably clear the child selections if they are no longer valid.
-            // For now, let's leave it manual or simple.
+            // Do not reset groups here since they no longer depend on the selected user
         }
-    }, [selectedUserId]);
+    }, [selectedUserId, isOpen, quiz]);
 
     const onSubmit = (data: QuizFormValues) => {
         const payload: QuizCreateRequest = {
@@ -520,7 +517,6 @@ const QuizModal = ({
                                     field.onChange(val);
                                     // Reset child fields when user changes
                                     setValue('subject_id', '');
-                                    setValue('group_id', '');
                                 }}
                                 placeholder="Foydalanuvchini tanlang"
                                 searchPlaceholder="Qidirish..."
@@ -556,12 +552,11 @@ const QuizModal = ({
                         control={control}
                         render={({ field }) => (
                             <Combobox
-                                options={userGroups.map(g => ({ value: g.id.toString(), label: g.name }))}
+                                options={allGroups.map(g => ({ value: g.id.toString(), label: g.name }))}
                                 value={field.value}
                                 onChange={field.onChange}
-                                placeholder={selectedUserId ? "Guruhni tanlang" : "Avval foydalanuvchini tanlang"}
+                                placeholder="Guruhni tanlang"
                                 searchPlaceholder="Qidirish..."
-                                disabled={!selectedUserId}
                             />
                         )}
                     />

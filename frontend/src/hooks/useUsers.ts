@@ -58,3 +58,15 @@ export const useSyncHemisUsers = () => {
         },
     });
 };
+
+export const useAssignRoles = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ user_id, role_ids }: { user_id: number; role_ids: number[] }) =>
+            userService.assignRoles(user_id, role_ids),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+            queryClient.invalidateQueries({ queryKey: ['user', variables.user_id] });
+        },
+    });
+};

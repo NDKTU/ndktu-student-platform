@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Pagination } from '@/components/ui/Pagination';
-import type { User, UserCreateRequest, Role } from '@/types/auth';
+import type { User, Role } from '@/types/auth';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
@@ -19,13 +19,14 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
-import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/hooks/useUsers';
+import { useUsers, useCreateUser, useUpdateUser, useDeleteUser, useAssignRoles } from '@/hooks/useUsers';
 import { useRoles } from '@/hooks/useReferenceData';
+import { ExpandableTags } from '@/components/ui/ExpandableTags';
 
 const userSchema = z.object({
     username: z.string().min(3, 'Username must be at least 3 characters'),
     password: z.string().optional(),
-    role_id: z.string().min(1, 'Role is required'),
+    role_ids: z.array(z.number()).min(1, 'Kamida bitta rol tanlanishi shart'),
     is_active: z.boolean().default(true),
 });
 
@@ -92,7 +93,7 @@ const UsersPage = () => {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                   {/* Headers removed as per user request */}
+                    {/* Headers removed as per user request */}
                 </div>
                 <div className="flex gap-2">
                     <div className="relative">
@@ -140,9 +141,10 @@ const UsersPage = () => {
                                         <TableCell>{user.id}</TableCell>
                                         <TableCell className="font-medium">{user.username}</TableCell>
                                         <TableCell>
-                                            <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-foreground">
-                                                {getRoleName(user.roles?.[0]?.id)}
-                                            </span>
+                                            <ExpandableTags
+                                                items={(user.roles || []).map(r => ({ id: r.id, name: getRoleName(r.id) }))}
+                                                limit={2}
+                                            />
                                         </TableCell>
 
                                         <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
@@ -226,44 +228,48 @@ const UserModal = ({
         defaultValues: {
             username: '',
             password: '',
-            role_id: '',
+            role_ids: [],
             is_active: true,
         },
     });
 
     const createMutation = useCreateUser();
     const updateMutation = useUpdateUser();
-    const isSubmitting = createMutation.isPending || updateMutation.isPending;
+    const assignRolesMutation = useAssignRoles();
+    const isSubmitting = createMutation.isPending || updateMutation.isPending || assignRolesMutation.isPending;
 
     useEffect(() => {
         if (user) {
             reset({
                 username: user.username,
                 password: '', // Don't fill password on edit
-                role_id: user.roles?.[0]?.id ? user.roles[0].id.toString() : '',
+                role_ids: user.roles?.map(r => r.id) || [],
                 is_active: user.is_active,
             });
         } else {
             reset({
                 username: '',
                 password: '',
-                role_id: '',
+                role_ids: [],
                 is_active: true,
             });
         }
     }, [user, reset]);
 
     const onSubmit = (data: UserFormValues) => {
-        const payload: UserCreateRequest = {
-            username: data.username,
-            password: data.password || undefined,
-            role_id: parseInt(data.role_id, 10),
-            is_active: data.is_active,
-        };
-
         if (user) {
+            const payload = {
+                username: data.username,
+                is_active: data.is_active,
+            };
+
             updateMutation.mutate({ id: user.id, data: payload }, {
-                onSuccess: (data) => onSuccess(data),
+                onSuccess: (updatedUser: any) => {
+                    assignRolesMutation.mutate({ user_id: updatedUser.id, role_ids: data.role_ids }, {
+                        onSuccess: () => onSuccess(updatedUser),
+                        onError: () => alert('Foydalanuvchi rollarini yangilashda xatolik yuz berdi')
+                    });
+                },
                 onError: (error) => {
                     console.error('Failed to update user', error);
                     alert('Foydalanuvchini yangilashda xatolik yuz berdi');
@@ -274,9 +280,17 @@ const UserModal = ({
                 alert('Yangi foydalanuvchilar uchun parol talab qilinadi');
                 return;
             }
-            createMutation.mutate({ ...payload, password: data.password! }, {
-                onSuccess: (data) => onSuccess(data),
-                onError: (error) => {
+
+            const payload = {
+                username: data.username,
+                password: data.password,
+                roles: data.role_ids.map(id => ({ name: roles.find(r => r.id === id)?.name || '' })),
+                is_active: data.is_active,
+            };
+
+            createMutation.mutate(payload, {
+                onSuccess: (newUser: any) => onSuccess(newUser),
+                onError: (error: any) => {
                     console.error('Failed to create user', error);
                     alert('Foydalanuvchi yaratishda xatolik yuz berdi');
                 }
@@ -305,20 +319,25 @@ const UserModal = ({
                 />
 
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">Rol</label>
-                    <select
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        {...register('role_id')}
-                    >
-                        <option value="">Rolni tanlang</option>
+                    <label className="text-sm font-medium">Rollar</label>
+                    <div className="grid grid-cols-2 gap-2 max-h-[150px] overflow-y-auto p-2 border rounded-md">
                         {roles.map((role) => (
-                            <option key={role.id} value={role.id}>
-                                {role.name}
-                            </option>
+                            <div key={role.id} className="flex items-center space-x-2">
+                                <input
+                                    type="checkbox"
+                                    id={`role-${role.id}`}
+                                    value={role.id}
+                                    {...register('role_ids', { valueAsNumber: true })}
+                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                />
+                                <label htmlFor={`role-${role.id}`} className="text-sm cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis">
+                                    {role.name}
+                                </label>
+                            </div>
                         ))}
-                    </select>
-                    {errors.role_id && (
-                        <p className="text-xs text-destructive">{errors.role_id.message}</p>
+                    </div>
+                    {errors.role_ids && (
+                        <p className="text-xs text-destructive">{errors.role_ids.message}</p>
                     )}
                 </div>
 

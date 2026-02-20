@@ -9,10 +9,30 @@ class TeacherKafedraInfo(BaseModel):
     faculty_id: Optional[int] = None
     model_config = ConfigDict(from_attributes=True)
 
+class TeacherGroupInfo(BaseModel):
+    id: int
+    name: str
+    model_config = ConfigDict(from_attributes=True)
+
+class TeacherUserGroupTeacherInfo(BaseModel):
+    group_id: int
+    group: TeacherGroupInfo
+    model_config = ConfigDict(from_attributes=True)
+
+class TeacherSubjectInfo(BaseModel):
+    id: int
+    name: str
+    model_config = ConfigDict(from_attributes=True)
+
+class TeacherSubjectTeacherInfo(BaseModel):
+    subject_id: int
+    subject: TeacherSubjectInfo
+    model_config = ConfigDict(from_attributes=True)
 
 class TeacherUserInfo(BaseModel):
     id: int
     username: str
+    group_teachers: list[TeacherUserGroupTeacherInfo] = []
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -44,6 +64,7 @@ class TeacherCreateResponse(BaseModel):
 
     kafedra: Optional[TeacherKafedraInfo] = None
     user: Optional[TeacherUserInfo] = None
+    subject_teachers: list[TeacherSubjectTeacherInfo] = []
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -68,3 +89,11 @@ class TeacherListResponse(BaseModel):
     page: int
     limit: int
     teachers: list[TeacherCreateResponse]
+
+class TeacherGroupAssignRequest(BaseModel):
+    user_id: int
+    group_ids: list[int]
+
+class TeacherSubjectAssignRequest(BaseModel):
+    teacher_id: int
+    subject_ids: list[int]

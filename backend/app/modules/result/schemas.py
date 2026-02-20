@@ -67,6 +67,7 @@ class ResultListRequest(BaseModel):
     quiz_id: Optional[int] = None
     subject_id: Optional[int] = None
     group_id: Optional[int] = None
+    grade: Optional[int] = None
     
     page: int = 1
     limit: int = 10

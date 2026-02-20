@@ -11,7 +11,14 @@ import {
     TableRow,
 } from '@/components/ui/Table';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Loader2, FileText } from 'lucide-react';
+import { Loader2, FileText, FilterX } from 'lucide-react';
+import { Combobox } from '@/components/ui/Combobox';
+import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
+
+import { useGroups } from '@/hooks/useGroups';
+import { useSubjects } from '@/hooks/useSubjects';
+import { useQuizzes } from '@/hooks/useQuizzes';
 
 import { useAuth } from '@/context/AuthContext';
 
@@ -24,10 +31,38 @@ const ResultsPage = () => {
     const isStudent = user?.roles?.some(role => role.name.toLowerCase() === 'student');
     const userId = isStudent ? user?.id : undefined;
 
-    const { data: resultsData, isLoading: isResultsLoading } = useResults(currentPage, pageSize, userId);
+    const [selectedGroup, setSelectedGroup] = useState<string>('');
+    const [selectedSubject, setSelectedSubject] = useState<string>('');
+    const [selectedQuiz, setSelectedQuiz] = useState<string>('');
+    const [selectedGrade, setSelectedGrade] = useState<string>('');
+
+    const parsedGroup = selectedGroup ? parseInt(selectedGroup, 10) : undefined;
+    const parsedSubject = selectedSubject ? parseInt(selectedSubject, 10) : undefined;
+    const parsedQuiz = selectedQuiz ? parseInt(selectedQuiz, 10) : undefined;
+    const parsedGrade = selectedGrade ? parseInt(selectedGrade, 10) : undefined;
+
+    const { data: resultsData, isLoading: isResultsLoading } = useResults(
+        currentPage, pageSize, userId, parsedGrade, parsedGroup, parsedSubject, parsedQuiz
+    );
+
+    const { data: groupsData } = useGroups(1, 100, '');
+    const { data: subjectsData } = useSubjects(1, 100, '');
+    const { data: quizzesData } = useQuizzes(1, 100);
+
+    const groupOptions = groupsData?.groups.map(g => ({ value: String(g.id), label: g.name })) || [];
+    const subjectOptions = subjectsData?.subjects.map(s => ({ value: String(s.id), label: s.name })) || [];
+    const quizOptions = quizzesData?.quizzes.map(q => ({ value: String(q.id), label: q.title })) || [];
 
     const results = resultsData?.results || [];
     const totalPages = resultsData ? Math.ceil(resultsData.total / pageSize) : 1;
+
+    const handleClearFilters = () => {
+        setSelectedGroup('');
+        setSelectedSubject('');
+        setSelectedQuiz('');
+        setSelectedGrade('');
+        setCurrentPage(1);
+    };
 
     const handleRowClick = (result: typeof results[0]) => {
         const params = new URLSearchParams();
@@ -38,6 +73,57 @@ const ResultsPage = () => {
 
     return (
         <div className="space-y-6">
+            <Card>
+                <CardContent className="pt-6">
+                    <div className="flex flex-wrap items-end gap-4">
+                        <div className="w-[200px]">
+                            <label className="text-sm font-medium mb-1.5 block">Guruh</label>
+                            <Combobox
+                                options={groupOptions}
+                                value={selectedGroup}
+                                onChange={setSelectedGroup}
+                                placeholder="Barcha guruhlar"
+                            />
+                        </div>
+                        <div className="w-[200px]">
+                            <label className="text-sm font-medium mb-1.5 block">Fan</label>
+                            <Combobox
+                                options={subjectOptions}
+                                value={selectedSubject}
+                                onChange={setSelectedSubject}
+                                placeholder="Barcha fanlar"
+                            />
+                        </div>
+                        <div className="w-[250px]">
+                            <label className="text-sm font-medium mb-1.5 block">Test</label>
+                            <Combobox
+                                options={quizOptions}
+                                value={selectedQuiz}
+                                onChange={setSelectedQuiz}
+                                placeholder="Barcha testlar"
+                            />
+                        </div>
+                        <div className="w-[120px]">
+                            <Input
+                                type="number"
+                                label="Ball"
+                                placeholder="..."
+                                value={selectedGrade}
+                                onChange={(e) => setSelectedGrade(e.target.value)}
+                                min={1}
+                                max={5}
+                            />
+                        </div>
+                        {(selectedGroup || selectedSubject || selectedQuiz || selectedGrade) && (
+                            <Button variant="ghost" className="mb-0.5" onClick={handleClearFilters}>
+                                <FilterX className="h-4 w-4 mr-2" />
+                                Tozalash
+                            </Button>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
+
             <Card>
                 <CardContent>
                     {isResultsLoading ? (
@@ -71,17 +157,17 @@ const ResultsPage = () => {
                                         onClick={() => handleRowClick(result)}
                                     >
                                         <TableCell>{result.id}</TableCell>
-                                        <TableCell className="font-medium">
+                                        <TableCell className="font-medium capitalize">
                                             <div>{result.student_name || result.user?.username || `Foydalanuvchi ${result.user_id}`}</div>
                                             {result.student_id && (
-                                                <div className="text-xs text-muted-foreground">
+                                                <div className="text-xs text-muted-foreground normal-case">
                                                     ID: {result.student_id}
                                                 </div>
                                             )}
                                         </TableCell>
-                                        <TableCell>{result.subject?.name || '-'}</TableCell>
-                                        <TableCell>{result.group?.name || '-'}</TableCell>
-                                        <TableCell>{result.quiz?.title || `Test ${result.quiz_id}`}</TableCell>
+                                        <TableCell className="capitalize">{result.subject?.name || '-'}</TableCell>
+                                        <TableCell className="capitalize">{result.group?.name || '-'}</TableCell>
+                                        <TableCell className="capitalize">{result.quiz?.title || `Test ${result.quiz_id}`}</TableCell>
                                         <TableCell>
                                             <span className={
                                                 result.grade == 5 ? "text-green-600 font-medium" :

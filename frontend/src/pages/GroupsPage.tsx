@@ -77,7 +77,8 @@ const GroupsPage = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-end">
+            <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold tracking-tight">Guruhlar</h1>
                 <div className="flex gap-2">
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -115,9 +116,9 @@ const GroupsPage = () => {
                                 {groups.map((group) => (
                                     <TableRow key={group.id}>
                                         <TableCell>{group.id}</TableCell>
-                                        <TableCell className="font-medium">{group.name}</TableCell>
+                                        <TableCell className="font-medium capitalize">{group.name}</TableCell>
                                         <TableCell>
-                                            <span className="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">
+                                            <span className="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10 capitalize">
                                                 {getFacultyName(group.faculty_id)}
                                             </span>
                                         </TableCell>

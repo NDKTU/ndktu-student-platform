@@ -2,6 +2,11 @@ import logging
 
 from fastapi import HTTPException, status
 from app.models.teacher.model import Teacher
+from app.models.user.model import User
+from app.models.group.model import Group
+from app.models.subject.model import Subject
+from app.models.group_teachers.model import GroupTeacher
+from app.models.subject_teacher.model import SubjectTeacher
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +15,8 @@ from .schemas import (
     TeacherCreateRequest,
     TeacherListRequest,
     TeacherListResponse,
+    TeacherGroupAssignRequest,
+    TeacherSubjectAssignRequest,
 )
 
 logger = logging.getLogger(__name__)
@@ -48,7 +55,8 @@ class TeacherRepository:
             # Eager load relationships for response
             stmt = select(Teacher).options(
                 selectinload(Teacher.kafedra),
-                selectinload(Teacher.user),
+                selectinload(Teacher.user).selectinload(User.group_teachers).selectinload(GroupTeacher.group),
+                selectinload(Teacher.subject_teachers).selectinload(SubjectTeacher.subject),
             ).where(Teacher.id == new_teacher.id)
             result = await session.execute(stmt)
             new_teacher = result.scalar_one()
@@ -65,7 +73,8 @@ class TeacherRepository:
     ) -> Teacher:
         stmt = select(Teacher).options(
             selectinload(Teacher.kafedra),
-            selectinload(Teacher.user),
+            selectinload(Teacher.user).selectinload(User.group_teachers).selectinload(GroupTeacher.group),
+            selectinload(Teacher.subject_teachers).selectinload(SubjectTeacher.subject),
         ).where(Teacher.id == teacher_id)
         result = await session.execute(stmt)
         teacher = result.scalar_one_or_none()
@@ -82,7 +91,8 @@ class TeacherRepository:
     ) -> TeacherListResponse:
         stmt = select(Teacher).options(
             selectinload(Teacher.kafedra),
-            selectinload(Teacher.user),
+            selectinload(Teacher.user).selectinload(User.group_teachers).selectinload(GroupTeacher.group),
+            selectinload(Teacher.subject_teachers).selectinload(SubjectTeacher.subject),
         ).offset(request.offset).limit(request.limit)
 
         if request.full_name:
@@ -112,7 +122,8 @@ class TeacherRepository:
     ) -> Teacher:
         stmt = select(Teacher).options(
             selectinload(Teacher.kafedra),
-            selectinload(Teacher.user),
+            selectinload(Teacher.user).selectinload(User.group_teachers).selectinload(GroupTeacher.group),
+            selectinload(Teacher.subject_teachers).selectinload(SubjectTeacher.subject),
         ).where(Teacher.id == teacher_id)
         result = await session.execute(stmt)
         teacher = result.scalar_one_or_none()
@@ -163,5 +174,91 @@ class TeacherRepository:
         await session.delete(teacher)
         await session.commit()
 
+
+    async def assign_groups(
+        self, session: AsyncSession, data: TeacherGroupAssignRequest
+    ) -> None:
+        # 1. Fetch User (since GroupTeacher uses teacher_id pointing to User.id)
+        stmt = select(User).where(User.id == data.user_id).options(selectinload(User.group_teachers))
+        result = await session.execute(stmt)
+        user = result.scalar_one_or_none()
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
+
+        # 2. Delete existing
+        for gt in user.group_teachers:
+            await session.delete(gt)
+        
+        # 3. Fetch specific groups to validate
+        if data.group_ids:
+            stmt_groups = select(Group).where(Group.id.in_(data.group_ids))
+            result_groups = await session.execute(stmt_groups)
+            groups = result_groups.scalars().all()
+            
+            if len(groups) != len(data.group_ids):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="One or more group_ids are invalid"
+                )
+            
+            # 4. Create new GroupTeacher entries
+            for group_id in data.group_ids:
+                new_gt = GroupTeacher(group_id=group_id, teacher_id=data.user_id)
+                session.add(new_gt)
+        
+        try:
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database error while assigning groups"
+            )
+
+    async def assign_subjects(
+        self, session: AsyncSession, data: TeacherSubjectAssignRequest
+    ) -> None:
+        # 1. Fetch Teacher (since SubjectTeacher uses teacher_id pointing to Teacher.id)
+        stmt = select(Teacher).where(Teacher.id == data.teacher_id).options(selectinload(Teacher.subject_teachers))
+        result = await session.execute(stmt)
+        teacher = result.scalar_one_or_none()
+
+        if not teacher:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Teacher not found"
+            )
+
+        # 2. Delete existing
+        for st in teacher.subject_teachers:
+            await session.delete(st)
+
+        # 3. Fetch subjects to validate
+        if data.subject_ids:
+            stmt_subjects = select(Subject).where(Subject.id.in_(data.subject_ids))
+            result_subjects = await session.execute(stmt_subjects)
+            subjects = result_subjects.scalars().all()
+            
+            if len(subjects) != len(data.subject_ids):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="One or more subject_ids are invalid"
+                )
+            
+            # 4. Create new entries
+            for subject_id in data.subject_ids:
+                new_st = SubjectTeacher(subject_id=subject_id, teacher_id=data.teacher_id)
+                session.add(new_st)
+        
+        try:
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database error while assigning subjects"
+            )
 
 get_teacher_repository = TeacherRepository()

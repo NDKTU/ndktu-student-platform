@@ -47,4 +47,26 @@ export const useDeleteTeacher = () => {
             queryClient.invalidateQueries({ queryKey: ['teachers'] });
         },
     });
+}
+
+export const useAssignGroups = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ user_id, group_ids }: { user_id: number; group_ids: number[] }) =>
+            teacherService.assignGroups(user_id, group_ids),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['teachers'] });
+        },
+    });
+};
+
+export const useAssignSubjects = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ teacher_id, subject_ids }: { teacher_id: number; subject_ids: number[] }) =>
+            teacherService.assignSubjects(teacher_id, subject_ids),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['teachers'] });
+        },
+    });
 };

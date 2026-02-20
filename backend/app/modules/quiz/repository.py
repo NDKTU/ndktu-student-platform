@@ -5,6 +5,7 @@ from app.models.quiz.model import Quiz
 from app.models.question.model import Question
 from app.models.quiz_questions.model import QuizQuestion
 from sqlalchemy import func, select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .schemas import (
@@ -175,6 +176,71 @@ class QuizRepository:
 
         await session.delete(quiz)
         await session.commit()
+
+    async def repeat_quiz(
+        self, session: AsyncSession, quiz_id: int
+    ) -> Quiz:
+        import uuid
+        stmt = (
+            select(Quiz)
+            .options(selectinload(Quiz.quiz_questions).selectinload(QuizQuestion.question))
+            .where(Quiz.id == quiz_id)
+        )
+        result = await session.execute(stmt)
+        quiz = result.scalar_one_or_none()
+
+        if not quiz:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Quiz not found"
+            )
+
+        new_quiz = Quiz(
+            title=quiz.title,
+            question_number=quiz.question_number,
+            duration=quiz.duration,
+            pin=str(uuid.uuid4())[:6].upper(),  # Generate a new PIN
+            is_active=quiz.is_active,
+            user_id=quiz.user_id,
+            group_id=quiz.group_id,
+            subject_id=quiz.subject_id,
+            attempt=2
+        )
+        session.add(new_quiz)
+        await session.flush()
+
+        for qq in quiz.quiz_questions:
+            if qq.question:
+                new_qq = QuizQuestion(
+                    quiz_id=new_quiz.id,
+                    question_id=qq.question_id
+                )
+                session.add(new_qq)
+
+        # Handle GroupTeacher relation if needed, though usually it's already there from original quiz creation
+        if new_quiz.user_id and new_quiz.group_id:
+            stmt_check = select(GroupTeacher).where(
+                GroupTeacher.teacher_id == new_quiz.user_id,
+                GroupTeacher.group_id == new_quiz.group_id
+            )
+            result_check = await session.execute(stmt_check)
+            if not result_check.scalar_one_or_none():
+                new_group_teacher = GroupTeacher(
+                    teacher_id=new_quiz.user_id,
+                    group_id=new_quiz.group_id
+                )
+                session.add(new_group_teacher)
+
+        try:
+            await session.commit()
+            await session.refresh(new_quiz)
+        except Exception:
+            await session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database error",
+            )
+        return new_quiz
+
 
 
     async def upload_image(self, file) -> str:

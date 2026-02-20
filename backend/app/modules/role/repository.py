@@ -47,6 +47,7 @@ class RoleRepository:
         try:
             await session.commit()
             await session.refresh(new_role)
+            # Re-fetch with permissions if needed, or it might just be empty for new role.
         except Exception:
             await session.rollback()
             raise HTTPException(
@@ -56,7 +57,7 @@ class RoleRepository:
         return new_role
 
     async def get_role(self, session: AsyncSession, role_id: int) -> Role:
-        stmt = select(Role).where(Role.id == role_id)
+        stmt = select(Role).options(selectinload(Role.permissions)).where(Role.id == role_id)
         result = await session.execute(stmt)
         role = result.scalar_one_or_none()
 
@@ -70,7 +71,7 @@ class RoleRepository:
     async def list_roles(
         self, session: AsyncSession, request: RoleListRequest
     ) -> RoleListResponse:
-        stmt = select(Role).offset(request.offset).limit(request.limit)
+        stmt = select(Role).options(selectinload(Role.permissions)).offset(request.offset).limit(request.limit)
         result = await session.execute(stmt)
         roles = result.scalars().all()
 
@@ -85,8 +86,7 @@ class RoleRepository:
     async def update_role(
         self, session: AsyncSession, role_id: int, data: RoleCreateRequest
     ) -> Role:
-        # Получаем текущую роль из базы
-        stmt = select(Role).where(Role.id == role_id)
+        stmt = select(Role).options(selectinload(Role.permissions)).where(Role.id == role_id)
         result = await session.execute(stmt)
         role = result.scalar_one_or_none()
 

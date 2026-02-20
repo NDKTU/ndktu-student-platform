@@ -15,9 +15,11 @@ import { Loader2, Search, ArrowLeft, Plus, Pencil, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { useTeachers, useCreateTeacher, useUpdateTeacher, useDeleteTeacher } from '@/hooks/useTeachers';
+import { useTeachers, useCreateTeacher, useUpdateTeacher, useDeleteTeacher, useAssignGroups, useAssignSubjects } from '@/hooks/useTeachers';
 import { useKafedras } from '@/hooks/useReferenceData';
 import { useUsers } from '@/hooks/useUsers';
+import { useGroups } from '@/hooks/useGroups';
+import { useSubjects } from '@/hooks/useSubjects';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -41,6 +43,11 @@ const TeachersPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [teacherToDelete, setTeacherToDelete] = useState<Teacher | null>(null);
+
+    const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+    const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
+    const [teacherToAssign, setTeacherToAssign] = useState<Teacher | null>(null);
+
     const pageSize = 10;
 
     useEffect(() => {
@@ -79,6 +86,18 @@ const TeachersPage = () => {
         setIsDeleteModalOpen(true);
     };
 
+    const handleAssignGroupsClick = (teacher: Teacher, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setTeacherToAssign(teacher);
+        setIsGroupModalOpen(true);
+    };
+
+    const handleAssignSubjectsClick = (teacher: Teacher, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setTeacherToAssign(teacher);
+        setIsSubjectModalOpen(true);
+    };
+
     const handleConfirmDelete = async () => {
         if (!teacherToDelete) return;
         deleteTeacherMutation.mutate(teacherToDelete.id, {
@@ -100,7 +119,8 @@ const TeachersPage = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-end">
+            <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold tracking-tight">O'qituvchilar</h1>
                 <div className="flex gap-2">
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -141,9 +161,9 @@ const TeachersPage = () => {
                                         onClick={() => handleViewTeacher(teacher)}
                                     >
                                         <TableCell className="font-medium">
-                                            <div>{teacher.full_name || teacher.user?.username || 'Noma\'lum'}</div>
+                                            <div className="capitalize">{teacher.full_name || teacher.user?.username || 'Noma\'lum'}</div>
                                             {teacher.kafedra && (
-                                                <div className="text-xs text-muted-foreground">
+                                                <div className="text-xs text-muted-foreground capitalize">
                                                     {teacher.kafedra?.name}
                                                 </div>
                                             )}
@@ -152,6 +172,12 @@ const TeachersPage = () => {
                                         <TableCell>{new Date(teacher.created_at).toLocaleDateString()}</TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
+                                                <Button variant="outline" size="sm" onClick={(e) => handleAssignGroupsClick(teacher, e)}>
+                                                    Guruhlar
+                                                </Button>
+                                                <Button variant="outline" size="sm" onClick={(e) => handleAssignSubjectsClick(teacher, e)}>
+                                                    Fanlar
+                                                </Button>
                                                 <Button variant="ghost" size="sm" onClick={(e) => handleEditClick(teacher, e)}>
                                                     <Pencil className="h-4 w-4" />
                                                 </Button>
@@ -200,6 +226,18 @@ const TeachersPage = () => {
                 description={`Siz haqiqatan ham "${teacherToDelete?.full_name}" o'qituvchisini o'chirmoqchimisiz? Bu amalni bekor qilib bo'lmaydi.`}
                 confirmText="O'chirish"
                 cancelText="Bekor qilish"
+            />
+
+            <TeacherGroupModal
+                isOpen={isGroupModalOpen}
+                onClose={() => setIsGroupModalOpen(false)}
+                teacher={teacherToAssign}
+            />
+
+            <TeacherSubjectModal
+                isOpen={isSubjectModalOpen}
+                onClose={() => setIsSubjectModalOpen(false)}
+                teacher={teacherToAssign}
             />
         </div>
     );
@@ -359,6 +397,114 @@ const TeacherModal = ({ isOpen, onClose, teacher, onSuccess }: {
                     <Button type="submit" isLoading={isSubmitting}>{teacher ? 'Yangilash' : 'Yaratish'}</Button>
                 </div>
             </form>
+        </Modal>
+    );
+};
+
+const TeacherGroupModal = ({ isOpen, onClose, teacher }: { isOpen: boolean; onClose: () => void; teacher: Teacher | null }) => {
+    const { data: groupsData } = useGroups(1, 100, '');
+    const assignGroupsMutation = useAssignGroups();
+    const groups = groupsData?.groups || [];
+
+    const [selectedGroupIds, setSelectedGroupIds] = useState<number[]>([]);
+
+    useEffect(() => {
+        if (teacher && isOpen) {
+            setSelectedGroupIds(teacher.user?.group_teachers?.map((g: any) => g.group_id) || []);
+        }
+    }, [teacher, isOpen]);
+
+    const handleToggleGroup = (id: number) => {
+        setSelectedGroupIds(prev => prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id]);
+    };
+
+    const handleSave = () => {
+        if (!teacher || !teacher.user) return;
+        assignGroupsMutation.mutate({ user_id: teacher.user.id, group_ids: selectedGroupIds }, {
+            onSuccess: () => onClose(),
+            onError: () => alert("Guruhlarni biriktirishda xatolik yuz berdi")
+        });
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title={`${teacher?.full_name} ga guruhlarni biriktirish`}>
+            <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto p-4 border rounded-md bg-muted/20">
+                    {groups.map(group => (
+                        <div key={group.id} className="flex items-center space-x-2">
+                            <input
+                                type="checkbox"
+                                id={`group-${group.id}`}
+                                checked={selectedGroupIds.includes(group.id)}
+                                onChange={() => handleToggleGroup(group.id)}
+                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                            />
+                            <label htmlFor={`group-${group.id}`} className="text-sm cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis">
+                                {group.name}
+                            </label>
+                        </div>
+                    ))}
+                    {groups.length === 0 && <span className="text-sm text-muted-foreground">Guruhlar topilmadi.</span>}
+                </div>
+                <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={onClose}>Bekor qilish</Button>
+                    <Button onClick={handleSave} isLoading={assignGroupsMutation.isPending}>Saqlash</Button>
+                </div>
+            </div>
+        </Modal>
+    );
+};
+
+const TeacherSubjectModal = ({ isOpen, onClose, teacher }: { isOpen: boolean; onClose: () => void; teacher: Teacher | null }) => {
+    const { data: subjectsData } = useSubjects(1, 100, '');
+    const assignSubjectsMutation = useAssignSubjects();
+    const subjects = subjectsData?.subjects || [];
+
+    const [selectedSubjectIds, setSelectedSubjectIds] = useState<number[]>([]);
+
+    useEffect(() => {
+        if (teacher && isOpen) {
+            setSelectedSubjectIds(teacher.subject_teachers?.map(s => s.subject_id) || []);
+        }
+    }, [teacher, isOpen]);
+
+    const handleToggleSubject = (id: number) => {
+        setSelectedSubjectIds(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
+    };
+
+    const handleSave = () => {
+        if (!teacher) return;
+        assignSubjectsMutation.mutate({ teacher_id: teacher.id, subject_ids: selectedSubjectIds }, {
+            onSuccess: () => onClose(),
+            onError: () => alert("Fanlarni biriktirishda xatolik yuz berdi")
+        });
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title={`${teacher?.full_name} ga fanlarni biriktirish`}>
+            <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto p-4 border rounded-md bg-muted/20">
+                    {subjects.map(subject => (
+                        <div key={subject.id} className="flex items-center space-x-2">
+                            <input
+                                type="checkbox"
+                                id={`subject-${subject.id}`}
+                                checked={selectedSubjectIds.includes(subject.id)}
+                                onChange={() => handleToggleSubject(subject.id)}
+                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                            />
+                            <label htmlFor={`subject-${subject.id}`} className="text-sm cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis">
+                                {subject.name}
+                            </label>
+                        </div>
+                    ))}
+                    {subjects.length === 0 && <span className="text-sm text-muted-foreground">Fanlar topilmadi.</span>}
+                </div>
+                <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={onClose}>Bekor qilish</Button>
+                    <Button onClick={handleSave} isLoading={assignSubjectsMutation.isPending}>Saqlash</Button>
+                </div>
+            </div>
         </Modal>
     );
 };

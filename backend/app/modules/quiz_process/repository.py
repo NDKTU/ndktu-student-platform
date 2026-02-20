@@ -184,6 +184,7 @@ class QuizProcessRepository:
                 quiz_id=data.quiz_id,
                 question_id=ans.question_id,
                 answer=ans.answer,
+                correct_answer=question.option_a if question else None,
                 is_correct=is_correct
             )
             session.add(user_answer)

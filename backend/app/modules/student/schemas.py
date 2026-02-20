@@ -72,6 +72,8 @@ class StudentListRequest(BaseModel):
     page: int = 1
     limit: int = 10
     search: str | None = None
+    user_id: int | None = None
+    group_id: int | None = None
 
     @property
     def offset(self) -> int:

@@ -35,6 +35,11 @@ export const userService = {
         await api.delete(`/user/${id}`);
     },
 
+    assignRoles: async (user_id: number, role_ids: number[]) => {
+        const response = await api.post('/user/assign_role', { user_id, role_ids });
+        return response.data;
+    },
+
     syncHemisUsers: async () => {
         const response = await api.post('/user/sync-hemis');
         return response.data;

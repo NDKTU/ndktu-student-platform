@@ -72,7 +72,8 @@ const SubjectsPage = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-end">
+            <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold tracking-tight">Fanlar</h1>
                 <div className="flex gap-2">
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -110,7 +111,7 @@ const SubjectsPage = () => {
                                 {subjects.map((subject) => (
                                     <TableRow key={subject.id}>
                                         <TableCell>{subject.id}</TableCell>
-                                        <TableCell className="font-medium">{subject.name}</TableCell>
+                                        <TableCell className="font-medium capitalize">{subject.name}</TableCell>
                                         <TableCell>{new Date(subject.created_at).toLocaleDateString()}</TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">

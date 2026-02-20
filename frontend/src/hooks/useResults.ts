@@ -1,20 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { resultService } from '@/services/resultService';
 
-export const useResults = (page = 1, limit = 10, userId?: number) => {
+export const useResults = (page = 1, limit = 10, userId?: number, grade?: number, group_id?: number, subject_id?: number, quiz_id?: number) => {
     return useQuery({
-        queryKey: ['results', page, limit, userId],
+        queryKey: ['results', page, limit, userId, grade, group_id, subject_id, quiz_id],
         queryFn: () => userId
-            ? resultService.getUserResults(userId, page, limit)
-            : resultService.getResults(page, limit),
+            ? resultService.getUserResults(userId, page, limit, grade, group_id, subject_id, quiz_id)
+            : resultService.getResults(page, limit, grade, group_id, subject_id, quiz_id),
         placeholderData: (previousData) => previousData,
     });
 };
 
-export const useUserResults = (userId: number, page = 1, limit = 10) => {
+export const useUserResults = (userId: number, page = 1, limit = 10, grade?: number, group_id?: number, subject_id?: number, quiz_id?: number) => {
     return useQuery({
-        queryKey: ['userResults', userId, page, limit],
-        queryFn: () => resultService.getUserResults(userId, page, limit),
+        queryKey: ['userResults', userId, page, limit, grade, group_id, subject_id, quiz_id],
+        queryFn: () => resultService.getUserResults(userId, page, limit, grade, group_id, subject_id, quiz_id),
         enabled: !!userId,
         placeholderData: (previousData) => previousData,
     });

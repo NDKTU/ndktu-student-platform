@@ -19,6 +19,7 @@ class UserAnswerResponse(BaseModel):
     quiz_id: Optional[int] = None
     question_id: Optional[int] = None
     answer: Optional[str] = None
+    correct_answer: Optional[str] = None
     is_correct: bool
     created_at: datetime
     updated_at: datetime

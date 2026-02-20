@@ -15,6 +15,7 @@ export interface UserAnswer {
     quiz_id?: number;
     question_id?: number;
     answer?: string;
+    correct_answer?: string | null;
     is_correct: boolean;
     created_at: string;
     updated_at: string;

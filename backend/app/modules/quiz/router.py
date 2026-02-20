@@ -91,6 +91,15 @@ async def delete_quiz(
     # await clear_cache(list_quizzes)
     # await clear_cache(get_quiz, quiz_id=quiz_id)
 
+@router.post("/{quiz_id}/repeat", response_model=QuizCreateResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(RateLimiter(times=5, seconds=60))])
+async def repeat_quiz(
+    quiz_id: int,
+    session: AsyncSession = Depends(db_helper.session_getter),
+    _: PermissionRequired = Depends(PermissionRequired("create:quiz")),
+):
+    result = await get_quiz_repository.repeat_quiz(session=session, quiz_id=quiz_id)
+    return result
+
 
 @router.post("/upload", status_code=status.HTTP_200_OK, dependencies=[Depends(RateLimiter(times=5, seconds=60))])
 async def upload_image(

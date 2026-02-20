@@ -10,6 +10,7 @@ export interface Quiz {
     group_id?: number;
     subject_id?: number;
     is_active: boolean;
+    attempt?: number | null;
     created_at: string;
     updated_at: string;
 }
@@ -23,6 +24,7 @@ export interface QuizCreateRequest {
     group_id?: number | null;
     subject_id?: number | null;
     is_active: boolean;
+    attempt?: number | null;
 }
 
 export interface QuizListResponse {

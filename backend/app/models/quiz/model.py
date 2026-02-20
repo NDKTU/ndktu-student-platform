@@ -36,6 +36,7 @@ class Quiz(Base, IdIntPk, TimestampMixin):
     duration: Mapped[int] = mapped_column(nullable=False)
     pin: Mapped[str] = mapped_column(nullable=False)
     is_active: Mapped[bool] = mapped_column(nullable=False, server_default="false")
+    attempt: Mapped[int | None] = mapped_column(nullable=True, default=1)
     
 
     user: Mapped["User"] = relationship(

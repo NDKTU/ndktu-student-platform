@@ -76,7 +76,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }: SidebarProps) => {
 
             <div
                 className={cn(
-                    "fixed inset-y-0 left-0 z-50 flex h-screen flex-col border-r bg-card transition-all duration-300 md:static",
+                    "fixed inset-y-0 left-0 z-50 flex h-screen flex-col border-r bg-card/95 backdrop-blur-md shadow-lg transition-all duration-300 md:static",
                     mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
                     isCollapsed ? "w-20" : "w-64"
                 )}
@@ -114,13 +114,13 @@ const Sidebar = ({ mobileOpen, setMobileOpen }: SidebarProps) => {
                                     to={item.href}
                                     title={isCollapsed ? item.name : undefined}
                                     className={cn(
-                                        "flex items-center rounded-md transition-all duration-200",
+                                        "flex items-center rounded-lg transition-all duration-200 hover:-translate-y-0.5",
                                         isCollapsed
                                             ? "h-10 w-10 justify-center p-0"
                                             : "px-3 py-2 text-sm font-medium",
                                         isActive
                                             ? "bg-primary text-primary-foreground shadow-md"
-                                            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                            : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
                                     )}
                                 >
                                     <item.icon className={cn("h-5 w-5", isCollapsed ? "mr-0" : "mr-3")} />

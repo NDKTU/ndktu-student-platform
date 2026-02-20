@@ -57,6 +57,9 @@ class ResultRepository:
         if request.subject_id:
             stmt = stmt.where(Result.subject_id == request.subject_id)
 
+        if request.grade is not None:
+            stmt = stmt.where(Result.grade == request.grade)
+
         result = await session.execute(stmt)
         results = result.scalars().all()
 
@@ -69,6 +72,8 @@ class ResultRepository:
             count_stmt = count_stmt.where(Result.group_id == request.group_id)
         if request.subject_id:
             count_stmt = count_stmt.where(Result.subject_id == request.subject_id)
+        if request.grade is not None:
+            count_stmt = count_stmt.where(Result.grade == request.grade)
 
         total_result = await session.execute(count_stmt)
         total = total_result.scalar() or 0

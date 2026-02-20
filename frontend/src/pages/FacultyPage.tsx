@@ -125,7 +125,7 @@ const FacultyPage = () => {
                                 {faculties.map((faculty) => (
                                     <TableRow key={faculty.id}>
                                         <TableCell>{faculty.id}</TableCell>
-                                        <TableCell className="font-medium">{faculty.name}</TableCell>
+                                        <TableCell className="font-medium capitalize">{faculty.name}</TableCell>
                                         <TableCell>{new Date(faculty.created_at).toLocaleDateString()}</TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">

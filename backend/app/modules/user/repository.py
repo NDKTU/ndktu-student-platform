@@ -3,6 +3,7 @@ import logging
 from fastapi import HTTPException, status
 from app.models.role.model import Role
 from app.models.user.model import User
+from app.models.student.model import Student
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -81,7 +82,7 @@ class UserRepository:
             .options(
                 selectinload(User.roles),
                 selectinload(User.teacher),
-                selectinload(User.student)
+                selectinload(User.student).selectinload(Student.group)
             )
             .offset(request.offset)
             .limit(request.limit)

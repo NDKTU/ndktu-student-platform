@@ -13,6 +13,8 @@ from .schemas import (
     TeacherCreateResponse,
     TeacherListRequest,
     TeacherListResponse,
+    TeacherGroupAssignRequest,
+    TeacherSubjectAssignRequest,
 )
 # from app.core.cache import clear_cache, custom_key_builder
 
@@ -90,3 +92,21 @@ async def delete_teacher(
     )
     # await clear_cache(list_teachers)
     # await clear_cache(get_teacher, teacher_id=teacher_id)
+
+@router.post("/assign_groups", status_code=status.HTTP_200_OK, dependencies=[Depends(RateLimiter(times=5, seconds=60))])
+async def assign_groups(
+    data: TeacherGroupAssignRequest,
+    session: AsyncSession = Depends(db_helper.session_getter),
+    _: PermissionRequired = Depends(PermissionRequired("update:teacher")),
+):
+    await get_teacher_repository.assign_groups(session=session, data=data)
+    return {"message": "Groups assigned successfully"}
+
+@router.post("/assign_subjects", status_code=status.HTTP_200_OK, dependencies=[Depends(RateLimiter(times=5, seconds=60))])
+async def assign_subjects(
+    data: TeacherSubjectAssignRequest,
+    session: AsyncSession = Depends(db_helper.session_getter),
+    _: PermissionRequired = Depends(PermissionRequired("update:teacher")),
+):
+    await get_teacher_repository.assign_subjects(session=session, data=data)
+    return {"message": "Subjects assigned successfully"}

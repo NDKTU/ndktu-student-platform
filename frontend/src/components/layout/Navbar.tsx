@@ -38,7 +38,7 @@ const Navbar = ({ onMenuClick }: NavbarProps) => {
     };
 
     return (
-        <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b bg-card px-6 shadow-sm transition-colors duration-300">
+        <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b bg-background/80 backdrop-blur-md px-6 shadow-sm transition-colors duration-300">
             {/* Left: Page Title / Breadcrumbs */}
             <div className="flex items-center gap-4">
                 <button
@@ -87,9 +87,9 @@ const Navbar = ({ onMenuClick }: NavbarProps) => {
                     >
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary overflow-hidden">
                             {user?.student?.image_path ? (
-                                <img 
-                                    src={user.student.image_path} 
-                                    alt={user.username} 
+                                <img
+                                    src={user.student.image_path}
+                                    alt={user.username}
                                     className="h-full w-full object-cover"
                                 />
                             ) : (

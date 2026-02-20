@@ -16,7 +16,9 @@ export interface Teacher {
     user?: {
         id: number;
         username: string;
+        group_teachers?: { group_id: number; group: { id: number; name: string } }[];
     };
+    subject_teachers?: { subject_id: number; subject: { id: number; name: string } }[];
     created_at: string;
     updated_at: string;
 }
@@ -61,5 +63,15 @@ export const teacherService = {
 
     deleteTeacher: async (id: number) => {
         await api.delete(`/teacher/${id}`);
+    },
+
+    assignGroups: async (user_id: number, group_ids: number[]) => {
+        const response = await api.post('/teacher/assign_groups', { user_id, group_ids });
+        return response.data;
+    },
+
+    assignSubjects: async (teacher_id: number, subject_ids: number[]) => {
+        const response = await api.post('/teacher/assign_subjects', { teacher_id, subject_ids });
+        return response.data;
     },
 };

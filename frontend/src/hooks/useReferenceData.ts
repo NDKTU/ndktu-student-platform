@@ -95,3 +95,14 @@ export const usePermissions = (page = 1, limit = 100, name?: string) => {
         queryFn: () => permissionService.getPermissions(page, limit, name),
     });
 };
+
+export const useAssignPermissions = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ role_id, permission_ids }: { role_id: number; permission_ids: number[] }) =>
+            roleService.assignPermissions(role_id, permission_ids),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['roles'] });
+        },
+    });
+};

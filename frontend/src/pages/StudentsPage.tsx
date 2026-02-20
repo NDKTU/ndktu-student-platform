@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Pagination } from '@/components/ui/Pagination';
 import { type Student } from '@/services/studentService';
 import { Button } from '@/components/ui/Button';
@@ -11,9 +12,13 @@ import {
     TableRow,
 } from '@/components/ui/Table';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { Loader2, Search, Eye, ArrowLeft } from 'lucide-react';
+import { Loader2, Search, ArrowLeft, CheckCircle2, XCircle, Pencil, Trash2, FilterX } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
-import { useStudents } from '@/hooks/useStudents';
+import { Combobox } from '@/components/ui/Combobox';
+import { useStudents, useDeleteStudent } from '@/hooks/useStudents';
+import { useUserResults } from '@/hooks/useResults';
+import { useGroups } from '@/hooks/useGroups';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 const StudentsPage = () => {
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -21,7 +26,12 @@ const StudentsPage = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [selectedGroup, setSelectedGroup] = useState<string>('');
+    const [studentToDelete, setStudentToDelete] = useState<number | null>(null);
     const pageSize = 10;
+    const deleteMutation = useDeleteStudent();
+
+    const parsedGroup = selectedGroup ? parseInt(selectedGroup, 10) : undefined;
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -31,7 +41,10 @@ const StudentsPage = () => {
         return () => clearTimeout(timer);
     }, [searchTerm]);
 
-    const { data: studentsData, isLoading: isStudentsLoading } = useStudents(currentPage, pageSize, debouncedSearch);
+    const { data: studentsData, isLoading: isStudentsLoading } = useStudents(currentPage, pageSize, debouncedSearch, undefined, parsedGroup);
+    const { data: groupsData } = useGroups(1, 100, '');
+
+    const groupOptions = groupsData?.groups.map(g => ({ value: String(g.id), label: g.name })) || [];
 
     const students = studentsData?.students || [];
     const totalPages = studentsData ? Math.ceil(studentsData.total / pageSize) : 1;
@@ -46,14 +59,36 @@ const StudentsPage = () => {
         setViewMode('list');
     };
 
+    const handleDelete = () => {
+        if (studentToDelete) {
+            deleteMutation.mutate(studentToDelete, {
+                onSuccess: () => {
+                    setStudentToDelete(null);
+                },
+                onError: () => {
+                    alert('Talabani o`chirishda xatolik yuz berdi');
+                }
+            });
+        }
+    };
+
     if (viewMode === 'detail' && selectedStudent) {
         return <StudentDetail student={selectedStudent} onBack={handleBackToList} />;
     }
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-end">
+            <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold tracking-tight">Talabalar</h1>
                 <div className="flex gap-2">
+                    <div className="w-[200px]">
+                        <Combobox
+                            options={groupOptions}
+                            value={selectedGroup}
+                            onChange={setSelectedGroup}
+                            placeholder="Barcha guruhlar"
+                        />
+                    </div>
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -63,6 +98,14 @@ const StudentsPage = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
+                    {(searchTerm || selectedGroup) && (
+                        <Button variant="ghost" className="px-3" onClick={() => {
+                            setSearchTerm('');
+                            setSelectedGroup('');
+                        }}>
+                            <FilterX className="h-4 w-4" />
+                        </Button>
+                    )}
                 </div>
             </div>
             <Card>
@@ -84,9 +127,13 @@ const StudentsPage = () => {
                             </TableHeader>
                             <TableBody>
                                 {students.map((student) => (
-                                    <TableRow key={student.id}>
+                                    <TableRow
+                                        key={student.id}
+                                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                                        onClick={() => handleViewStudent(student)}
+                                    >
                                         <TableCell className="font-medium">
-                                            <div>{student.full_name || 'Noma\'lum'}</div>
+                                            <div className="capitalize">{student.full_name || 'Noma\'lum'}</div>
                                             <div className="text-xs text-muted-foreground">ID: {student.user_id}</div>
                                         </TableCell>
                                         <TableCell>{student.phone || '-'}</TableCell>
@@ -95,9 +142,29 @@ const StudentsPage = () => {
                                         </TableCell>
                                         <TableCell>{new Date(student.created_at).toLocaleDateString()}</TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="ghost" size="sm" onClick={() => handleViewStudent(student)}>
-                                                <Eye className="h-4 w-4" />
-                                            </Button>
+                                            <div className="flex justify-end gap-2">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        alert('Tahrirlash funksiyasi tez orada qo`shiladi');
+                                                    }}
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setStudentToDelete(student.id);
+                                                    }}
+                                                    className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -118,11 +185,30 @@ const StudentsPage = () => {
                 onPageChange={setCurrentPage}
                 isLoading={isStudentsLoading}
             />
+
+            <ConfirmDialog
+                isOpen={!!studentToDelete}
+                onClose={() => setStudentToDelete(null)}
+                onConfirm={handleDelete}
+                title="Talabani o'chirish"
+                description="Haqiqatan ham bu talabani o'chirmoqchimisiz? Bu amalni bekor qilib bo'lmaydi."
+                confirmText="O'chirish"
+                cancelText="Bekor qilish"
+                variant="danger"
+            />
         </div>
     );
 };
 
 const StudentDetail = ({ student, onBack }: { student: Student; onBack: () => void }) => {
+    const navigate = useNavigate();
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 5;
+    const { data: resultsData, isLoading: isResultsLoading } = useUserResults(student.user_id, currentPage, pageSize);
+
+    const results = resultsData?.results || [];
+    const totalPages = resultsData ? Math.ceil(resultsData.total / pageSize) : 1;
+
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">
@@ -192,6 +278,92 @@ const StudentDetail = ({ student, onBack }: { student: Student; onBack: () => vo
                     </CardContent>
                 </Card>
             </div>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Natijalar</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {isResultsLoading ? (
+                        <div className="flex justify-center p-8">
+                            <Loader2 className="h-8 w-8 animate-spin" />
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Test Nomi</TableHead>
+                                        <TableHead>Fan</TableHead>
+                                        <TableHead>Test o'tkazilgan sana</TableHead>
+                                        <TableHead>Natija</TableHead>
+                                        <TableHead className="text-right">Batafsil</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {results.map((result) => (
+                                        <TableRow key={result.id}>
+                                            <TableCell className="font-medium align-middle capitalize">
+                                                {result.quiz?.title || '-'}
+                                                {result.quiz?.attempt === 2 && (
+                                                    <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-300 normal-case">
+                                                        Qayta ishlash
+                                                    </span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="align-middle capitalize">{result.subject?.name || '-'}</TableCell>
+                                            <TableCell className="align-middle">{new Date(result.created_at).toLocaleDateString()}</TableCell>
+                                            <TableCell className="align-middle">
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-lg font-bold">
+                                                            {result.grade.toFixed(1)} <span className="text-sm font-normal text-muted-foreground">/ 5</span>
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-3 text-xs">
+                                                        <div className="flex items-center gap-1 text-green-600 dark:text-green-500">
+                                                            <CheckCircle2 className="h-3.5 w-3.5" />
+                                                            <span>{result.correct_answers}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1 text-red-600 dark:text-red-500">
+                                                            <XCircle className="h-3.5 w-3.5" />
+                                                            <span>{result.wrong_answers}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right align-middle">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => navigate(`/user-answers?user_id=${student.user_id}&quiz_id=${result.quiz_id}`)}
+                                                >
+                                                    Javoblarni ko'rish
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                    {results.length === 0 && (
+                                        <TableRow>
+                                            <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                                                Ushbu talaba uchun natijalar topilmadi.
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                            {results.length > 0 && (
+                                <Pagination
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    onPageChange={setCurrentPage}
+                                    isLoading={isResultsLoading}
+                                />
+                            )}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
         </div>
     );
 };

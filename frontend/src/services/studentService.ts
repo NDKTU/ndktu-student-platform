@@ -45,9 +45,9 @@ export interface StudentListResponse {
 }
 
 export const studentService = {
-    getStudents: async (page = 1, limit = 10, full_name?: string) => {
+    getStudents: async (page = 1, limit = 10, full_name?: string, user_id?: number, group_id?: number) => {
         const response = await api.get<StudentListResponse>('/students/', {
-            params: { page, limit, full_name },
+            params: { page, limit, search: full_name, user_id, group_id },
         });
         return response.data;
     },

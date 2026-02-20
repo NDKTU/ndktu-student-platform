@@ -74,8 +74,8 @@ const UserAnswersPage = () => {
                             <Card
                                 key={answer.id}
                                 className={`border-l-4 ${answer.is_correct
-                                    ? 'border-l-green-500'
-                                    : 'border-l-red-500'
+                                    ? 'border-l-green-400 dark:border-l-green-600/50'
+                                    : 'border-l-red-400 dark:border-l-red-600/50'
                                     }`}
                             >
                                 <CardHeader className="pb-3">
@@ -97,17 +97,20 @@ const UserAnswersPage = () => {
                                             {(['a', 'b', 'c', 'd'] as const).map((opt) => {
                                                 const optionKey = `option_${opt}` as keyof typeof question;
                                                 const optionText = question[optionKey] as string;
-                                                const isSelected = answer.answer?.toLowerCase() === opt;
+                                                const isSelected = answer.answer === optionText || answer.answer?.toLowerCase() === opt;
+                                                const isCorrectOption = answer.correct_answer === optionText || question.option_a === optionText;
+
+                                                let optionStyles = 'bg-transparent border-border text-foreground opacity-80';
+                                                if (isCorrectOption) {
+                                                    optionStyles = 'bg-transparent border-green-500/50 text-green-600 dark:border-green-500/40 dark:text-green-400 font-semibold opacity-100 shadow-sm';
+                                                } else if (isSelected) {
+                                                    optionStyles = 'bg-transparent border-red-500/50 text-red-600 dark:border-red-500/40 dark:text-red-400 font-medium opacity-100 shadow-sm';
+                                                }
 
                                                 return (
                                                     <div
                                                         key={opt}
-                                                        className={`rounded-md border px-3 py-2 text-sm transition-colors ${isSelected
-                                                            ? answer.is_correct
-                                                                ? 'bg-green-50 border-green-300 text-green-800 dark:bg-green-950 dark:border-green-700 dark:text-green-200'
-                                                                : 'bg-red-50 border-red-300 text-red-800 dark:bg-red-950 dark:border-red-700 dark:text-red-200'
-                                                            : 'bg-muted/30'
-                                                            }`}
+                                                        className={`rounded-md border px-3 py-2 text-sm transition-colors ${optionStyles}`}
                                                     >
                                                         <span className="font-semibold mr-2">{optionLabels[opt]})</span>
                                                         {optionText}
@@ -116,7 +119,9 @@ const UserAnswersPage = () => {
                                             })}
                                         </div>
                                         <div className="mt-2 text-xs text-muted-foreground">
-                                            Tanlangan javob: <span className="font-medium">{answer.answer ? optionLabels[answer.answer.toLowerCase()] || answer.answer : '-'}</span>
+                                            Tanlangan javob: <span className="font-medium">
+                                                {answer.answer ? (['a', 'b', 'c', 'd'].includes(answer.answer.toLowerCase()) ? optionLabels[answer.answer.toLowerCase()] : answer.answer) : '-'}
+                                            </span>
                                             {' · '}
                                             {answer.is_correct ? (
                                                 <span className="text-green-600 font-medium">To'g'ri</span>
