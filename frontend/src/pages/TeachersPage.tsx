@@ -15,6 +15,7 @@ import { Loader2, Search, ArrowLeft, Plus, Pencil, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Combobox } from '@/components/ui/Combobox';
 import { useTeachers, useCreateTeacher, useUpdateTeacher, useDeleteTeacher, useAssignGroups, useAssignSubjects } from '@/hooks/useTeachers';
 import { useKafedras } from '@/hooks/useReferenceData';
 import { useUsers } from '@/hooks/useUsers';
@@ -396,32 +397,26 @@ const TeacherModal = ({ isOpen, onClose, teacher, onSuccess }: {
                 <Input label="Otasining ismi" {...register('third_name')} error={errors.third_name?.message} placeholder="Otasining ismini kiriting" />
                 <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">Kafedra</label>
-                    <select
-                        value={selectedKafedraId}
-                        onChange={(e) => setValue('kafedra_id', Number(e.target.value))}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    >
-                        <option value={0}>Kafedrani tanlang...</option>
-                        {kafedras.map((kafedra) => (
-                            <option key={kafedra.id} value={kafedra.id}>{kafedra.name}</option>
-                        ))}
-                    </select>
+                    <Combobox
+                        options={kafedras.map(k => ({ value: k.id.toString(), label: k.name }))}
+                        value={selectedKafedraId ? selectedKafedraId.toString() : ""}
+                        onChange={(val) => setValue('kafedra_id', val ? Number(val) : 0)}
+                        placeholder="Kafedrani tanlang..."
+                        searchPlaceholder="Kafedrani qidirish..."
+                    />
                     {errors.kafedra_id && (
                         <p className="mt-1 text-xs text-destructive">{errors.kafedra_id.message}</p>
                     )}
                 </div>
                 <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">Foydalanuvchi</label>
-                    <select
-                        value={selectedUserId}
-                        onChange={(e) => setValue('user_id', Number(e.target.value))}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    >
-                        <option value={0}>Foydalanuvchini tanlang...</option>
-                        {users.map((user) => (
-                            <option key={user.id} value={user.id}>{user.username}</option>
-                        ))}
-                    </select>
+                    <Combobox
+                        options={users.map(u => ({ value: u.id.toString(), label: u.username }))}
+                        value={selectedUserId ? selectedUserId.toString() : ""}
+                        onChange={(val) => setValue('user_id', val ? Number(val) : 0)}
+                        placeholder="Foydalanuvchini tanlang..."
+                        searchPlaceholder="Foydalanuvchini qidirish..."
+                    />
                     {errors.user_id && (
                         <p className="mt-1 text-xs text-destructive">{errors.user_id.message}</p>
                     )}
@@ -436,7 +431,17 @@ const TeacherModal = ({ isOpen, onClose, teacher, onSuccess }: {
 };
 
 const TeacherGroupModal = ({ isOpen, onClose, teacher }: { isOpen: boolean; onClose: () => void; teacher: Teacher | null }) => {
-    const { data: groupsData } = useGroups(1, 100, '');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    const { data: groupsData } = useGroups(1, 100, debouncedSearch);
     const assignGroupsMutation = useAssignGroups();
     const groups = groupsData?.groups || [];
 
@@ -445,6 +450,8 @@ const TeacherGroupModal = ({ isOpen, onClose, teacher }: { isOpen: boolean; onCl
     useEffect(() => {
         if (teacher && isOpen) {
             setSelectedGroupIds(teacher.user?.group_teachers?.map((g: any) => g.group_id) || []);
+            setSearchQuery('');
+            setDebouncedSearch('');
         }
     }, [teacher, isOpen]);
 
@@ -463,6 +470,15 @@ const TeacherGroupModal = ({ isOpen, onClose, teacher }: { isOpen: boolean; onCl
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={`${teacher?.full_name} ga guruhlarni biriktirish`}>
             <div className="space-y-4">
+                <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Guruhlarni qidirish..."
+                        className="pl-8"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
                 <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto p-4 border rounded-md bg-muted/20">
                     {groups.map(group => (
                         <div key={group.id} className="flex items-center space-x-2">
@@ -490,7 +506,17 @@ const TeacherGroupModal = ({ isOpen, onClose, teacher }: { isOpen: boolean; onCl
 };
 
 const TeacherSubjectModal = ({ isOpen, onClose, teacher }: { isOpen: boolean; onClose: () => void; teacher: Teacher | null }) => {
-    const { data: subjectsData } = useSubjects(1, 100, '');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    const { data: subjectsData } = useSubjects(1, 100, debouncedSearch);
     const assignSubjectsMutation = useAssignSubjects();
     const subjects = subjectsData?.subjects || [];
 
@@ -499,6 +525,8 @@ const TeacherSubjectModal = ({ isOpen, onClose, teacher }: { isOpen: boolean; on
     useEffect(() => {
         if (teacher && isOpen) {
             setSelectedSubjectIds(teacher.subject_teachers?.map(s => s.subject_id) || []);
+            setSearchQuery('');
+            setDebouncedSearch('');
         }
     }, [teacher, isOpen]);
 
@@ -517,6 +545,15 @@ const TeacherSubjectModal = ({ isOpen, onClose, teacher }: { isOpen: boolean; on
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={`${teacher?.full_name} ga fanlarni biriktirish`}>
             <div className="space-y-4">
+                <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Fanlarni qidirish..."
+                        className="pl-8"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
                 <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto p-4 border rounded-md bg-muted/20">
                     {subjects.map(subject => (
                         <div key={subject.id} className="flex items-center space-x-2">
