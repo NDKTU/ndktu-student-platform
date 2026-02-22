@@ -40,10 +40,11 @@ class QuestionCreateResponse(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def extract_names(cls, data):
-        if hasattr(data, "subject") and data.subject:
-            data.subject_name = data.subject.name
-        if hasattr(data, "user") and data.user:
-            data.username = data.user.username
+        if hasattr(data, "__dict__"):
+            if "subject" in data.__dict__ and data.subject:
+                data.subject_name = data.subject.name
+            if "user" in data.__dict__ and data.user:
+                data.username = data.user.username
         return data
 
 class QuestionListRequest(BaseModel):

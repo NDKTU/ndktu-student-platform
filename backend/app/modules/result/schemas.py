@@ -53,12 +53,13 @@ class ResultResponse(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def extract_student_data(cls, data):
-        if hasattr(data, "user") and data.user:
-            user = data.user
-            if hasattr(user, "student") and user.student:
-                student = user.student
-                data.student_id = student.student_id_number
-                data.student_name = student.full_name
+        if hasattr(data, "__dict__"):
+            if "user" in data.__dict__ and data.user:
+                user = data.user
+                if hasattr(user, "__dict__") and "student" in user.__dict__ and user.student:
+                    student = user.student
+                    data.student_id = student.student_id_number
+                    data.student_name = student.full_name
         return data
 
 

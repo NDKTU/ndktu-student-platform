@@ -78,10 +78,14 @@ const StudentsPage = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold tracking-tight">Talabalar</h1>
-                <div className="flex gap-2">
-                    <div className="w-[200px]">
+            {/* Page header */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h1 className="text-xl font-semibold tracking-tight">Talabalar</h1>
+                    <p className="mt-0.5 text-sm text-muted-foreground">Talabalar ro'yxati va ma'lumotlarini boshqarish</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-[180px]">
                         <Combobox
                             options={groupOptions}
                             value={selectedGroup}
@@ -92,17 +96,14 @@ const StudentsPage = () => {
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Talabalarni qidirish..."
-                            className="pl-8 w-[250px]"
+                            placeholder="Qidirish..."
+                            className="pl-8 w-[220px]"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
                     {(searchTerm || selectedGroup) && (
-                        <Button variant="ghost" className="px-3" onClick={() => {
-                            setSearchTerm('');
-                            setSelectedGroup('');
-                        }}>
+                        <Button variant="ghost" size="icon" onClick={() => { setSearchTerm(''); setSelectedGroup(''); }}>
                             <FilterX className="h-4 w-4" />
                         </Button>
                     )}

@@ -9,10 +9,12 @@ const MainLayout = () => {
     return (
         <div className="flex h-screen overflow-hidden bg-background">
             <Sidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
-            <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
                 <Navbar onMenuClick={() => setMobileOpen(!mobileOpen)} />
-                <main className="flex-1 overflow-y-auto p-8">
-                    <Outlet />
+                <main className="flex-1 overflow-y-auto">
+                    <div className="p-6">
+                        <Outlet />
+                    </div>
                 </main>
             </div>
         </div>
@@ -20,3 +22,4 @@ const MainLayout = () => {
 };
 
 export default MainLayout;
+

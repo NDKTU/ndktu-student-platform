@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Savollar - Admin Panel</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            DEFAULT: '#4F46E5', // Indigo-600
+                            hover: '#4338CA',   // Indigo-700
+                            light: '#EEF2FF',   // Indigo-50
+                        },
+                        background: '#F9FAFB',  // Gray-50
+                        surface: '#FFFFFF',
+                        border: '#E5E7EB',      // Gray-200
+                        textMain: '#111827',    // Gray-900
+                        textMuted: '#6B7280',   // Gray-500
+                        danger: {
+                            DEFAULT: '#EF4444', // Red-500
+                            hover: '#DC2626',   // Red-600
+                            bg: '#FEF2F2',      // Red-50
+                        }
+                    },
+                    transitionDuration: {
+                        DEFAULT: '200ms',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* Base styles */
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: theme('colors.background');
+            color: theme('colors.textMain');
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+
+        /* Nav Item Active State */
+        .nav-item {
+            transition: all 0.2s ease;
+        }
+        .nav-item.active {
+            background-color: theme('colors.primary.DEFAULT');
+            color: white;
+            border-radius: 0.5rem;
+        }
+        .nav-item:not(.active):hover {
+            background-color: theme('colors.primary.light');
+            color: theme('colors.primary.DEFAULT');
+            border-radius: 0.5rem;
+        }
+
+        /* Table Row Hover */
+        .table-row {
+            transition: background-color 0.2s ease;
+        }
+        .table-row:hover {
+            background-color: theme('colors.primary.light');
+        }
+
+        /* Modal Transitions */
+        .modal-overlay {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            backdrop-filter: blur(2px);
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-content {
+            transform: scale(0.95);
+            opacity: 0;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        /* Input focus rings */
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px theme('colors.primary.DEFAULT');
+            border-color: transparent;
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+    <!-- Sidebar (Icon-only, Collapsed) -->
+    <aside class="w-[56px] min-w-[56px] bg-surface border-r border-border flex flex-col items-center py-4 z-20 flex-shrink-0">
+        <!-- Logo -->
+        <div class="w-8 h-8 rounded-lg bg-primary flex flex-shrink-0 items-center justify-center text-white font-bold text-sm mb-6 shadow-md shadow-primary/30 cursor-pointer">
+            U
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="flex-1 flex flex-col gap-2 w-full px-2 overflow-y-auto scrollbar-hide">
+            <!-- Tooltips can be added via title attribute for simplicity -->
+            <a href="#" class="nav-item w-10 h-10 flex items-center justify-center text-textMuted mx-auto" title="Dashboard">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+            </a>
+            <a href="#" class="nav-item w-10 h-10 flex items-center justify-center text-textMuted mx-auto" title="Foydalanuvchilar">
+                <i data-lucide="users" class="w-5 h-5"></i>
+            </a>
+            <a href="#" class="nav-item w-10 h-10 flex items-center justify-center text-textMuted mx-auto" title="Talabalar">
+                <i data-lucide="graduation-cap" class="w-5 h-5"></i>
+            </a>
+            <a href="#" class="nav-item w-10 h-10 flex items-center justify-center text-textMuted mx-auto" title="Rollar">
+                <i data-lucide="shield" class="w-5 h-5"></i>
+            </a>
+            <a href="#" class="nav-item w-10 h-10 flex items-center justify-center text-textMuted mx-auto" title="Ruxsatlar">
+                <i data-lucide="key" class="w-5 h-5"></i>
+            </a>
+            <a href="#" class="nav-item w-10 h-10 flex items-center justify-center text-textMuted mx-auto" title="Fakultetlar">
+                <i data-lucide="building-2" class="w-5 h-5"></i>
+            </a>
+            <a href="#" class="nav-item w-10 h-10 flex items-center justify-center text-textMuted mx-auto" title="Kafedralar">
+                <i data-lucide="library" class="w-5 h-5"></i>
+            </a>
+            <a href="#" class="nav-item w-10 h-10 flex items-center justify-center text-textMuted mx-auto" title="Guruhlar">
+                <i data-lucide="users-2" class="w-5 h-5"></i>
+            </a>
+            <a href="#" class="nav-item w-10 h-10 flex items-center justify-center text-textMuted mx-auto" title="Fanlar">
+                <i data-lucide="book-open" class="w-5 h-5"></i>
+            </a>
+            <!-- Active item -->
+            <a href="#" class="nav-item active w-10 h-10 flex items-center justify-center mx-auto shadow-sm" title="Savollar">
+                <i data-lucide="help-circle" class="w-5 h-5"></i>
+            </a>
+            <a href="#" class="nav-item w-10 h-10 flex items-center justify-center text-textMuted mx-auto" title="Testlar">
+                <i data-lucide="file-text" class="w-5 h-5"></i>
+            </a>
+            <a href="#" class="nav-item w-10 h-10 flex items-center justify-center text-textMuted mx-auto" title="Natijalar">
+                <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+            </a>
+        </nav>
+
+        <!-- Profile/Logout -->
+        <div class="mt-auto pt-4 border-t border-border w-full flex justify-center px-2">
+            <button class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:ring-2 hover:ring-primary/50 transition-all cursor-pointer overflow-hidden border border-border">
+                <img src="https://ui-avatars.com/api/?name=Admin+U&background=4F46E5&color=fff&rounded=true" alt="Profile" class="w-full h-full object-cover">
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col min-w-0 bg-background overflow-hidden">
+        
+        <!-- Header -->
+        <header class="h-[72px] bg-surface border-b border-border flex items-center justify-between px-6 lg:px-10 shrink-0 z-10 sticky top-0">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-textMain">Savollar</h1>
+                <p class="text-sm text-textMuted mt-0.5">Test savollarini yaratish va boshqarish</p>
+            </div>
+
+            <!-- Mobile menu button (visible only on small screens) -->
+            <button class="lg:hidden text-textMuted p-2 rounded-md hover:bg-gray-100">
+                <i data-lucide="menu" class="w-6 h-6"></i>
+            </button>
+        </header>
+
+        <!-- Page Content -->
+        <div class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10">
+            <div class="max-w-[1400px] mx-auto space-y-6">
+                
+                <!-- Action Bar -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-surface p-4 rounded-xl shadow-sm border border-border">
+                    <div class="relative w-full sm:w-80">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-textMuted"></i>
+                        <input type="text" id="searchInput" placeholder="Qidirish..." class="w-full h-10 pl-9 pr-4 text-sm bg-background border border-border rounded-lg text-textMain placeholder-textMuted focus:border-primary transition-colors" oninput="handleSearch()">
+                    </div>
+                    <div class="flex items-center gap-3 w-full sm:w-auto">
+                        <button class="flex-1 sm:flex-none h-10 px-4 bg-surface hover:bg-gray-50 text-textMain border border-border rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors shadow-sm active:scale-[0.98]">
+                            <i data-lucide="upload" class="w-4 h-4 text-textMuted"></i>
+                            Excel yuklash
+                        </button>
+                        <button onclick="openModal('add')" class="flex-1 sm:flex-none h-10 px-4 bg-primary hover:bg-primary-hover text-white rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-md shadow-primary/20 active:scale-[0.98]">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            <span class="whitespace-nowrap">Savol qo'shish</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Table Card -->
+                <div class="bg-surface border border-border rounded-xl shadow-sm overflow-hidden flex flex-col">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left whitespace-nowrap min-w-[800px]">
+                            <thead>
+                                <tr class="border-b border-border bg-gray-50/50">
+                                    <th class="px-6 py-4 text-xs font-semibold text-textMuted uppercase tracking-wider w-[50%]">Savol</th>
+                                    <th class="px-6 py-4 text-xs font-semibold text-textMuted uppercase tracking-wider">Fan</th>
+                                    <th class="px-6 py-4 text-xs font-semibold text-textMuted uppercase tracking-wider">Foydalanuvchi</th>
+                                    <th class="px-6 py-4 text-xs font-semibold text-textMuted uppercase tracking-wider text-right">Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody" class="divide-y divide-border">
+                                <!-- Rows will be rendered here by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="emptyState" class="hidden flex-col items-center justify-center py-16 px-4 text-center">
+                        <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 text-primary">
+                            <i data-lucide="search-x" class="w-8 h-8"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-textMain mb-1">Ma'lumot topilmadi</h3>
+                        <p class="text-sm text-textMuted max-w-sm mx-auto">Siz qidirgan so'rovga mos savollar ro'yxati bo'sh. Boshqa so'z bilan qidirib ko'ring yoki yangi savol qo'shing.</p>
+                        <button onclick="clearSearch()" class="mt-4 text-sm font-medium text-primary hover:text-primary-hover transition-colors">Filterni tozalash</button>
+                    </div>
+
+                    <!-- Pagination Footer -->
+                    <div class="bg-gray-50/50 border-t border-border px-6 py-4 flex items-center justify-between">
+                        <p class="text-sm text-textMuted font-medium" id="paginationInfo">Showing 1 to 5 of 5 results</p>
+                        <div class="flex gap-2">
+                            <button class="w-8 h-8 rounded border border-border flex items-center justify-center text-textMuted bg-surface disabled:opacity-50 cursor-not-allowed hover:bg-gray-50 hover:text-textMain transition-colors" disabled>
+                                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                            </button>
+                            <button class="w-8 h-8 rounded border border-border flex items-center justify-center text-textMuted bg-surface disabled:opacity-50 cursor-not-allowed hover:bg-gray-50 hover:text-textMain transition-colors" disabled>
+                                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals Overlay Container -->
+
+    <!-- Add/Edit Modal Form -->
+    <div id="editModal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-gray-900/40" onclick="closeModal('editModal')"></div>
+        
+        <!-- Modal Content -->
+        <div class="modal-content bg-surface w-full max-w-lg rounded-2xl shadow-xl border border-border relative z-10 flex flex-col max-h-[90vh]">
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-border flex items-center justify-between shrink-0 rounded-t-2xl bg-surface">
+                <h2 id="modalTitle" class="text-lg font-bold text-textMain">Savol qo'shish</h2>
+                <button onclick="closeModal('editModal')" class="text-textMuted hover:text-textMain p-1 rounded-md hover:bg-gray-100 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <!-- Body -->
+            <div class="p-6 overflow-y-auto space-y-4 flex-1">
+                <input type="hidden" id="editId">
+                
+                <div class="space-y-1.5">
+                    <label class="text-sm font-semibold text-textMain" for="questionText">Savol matni</label>
+                    <textarea id="questionText" rows="3" placeholder="Savol mazmunini kiriting..." class="w-full px-3 py-2 bg-background border border-border justify-center rounded-lg text-sm text-textMain placeholder-textMuted resize-none transition-colors"></textarea>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-sm font-semibold text-textMain" for="subjectDropdown">Fan</label>
+                    <div class="relative">
+                        <select id="subjectDropdown" class="w-full h-10 px-3 pr-10 bg-background border border-border rounded-lg text-sm text-textMain appearance-none cursor-pointer transition-colors">
+                            <option value="" disabled selected>Fanni tanlang</option>
+                            <option value="Matematika">Matematika</option>
+                            <option value="Fizika">Fizika</option>
+                            <option value="Informatika">Informatika</option>
+                            <option value="Ingliz tili">Ingliz tili</option>
+                            <option value="Tarix">Tarix</option>
+                        </select>
+                        <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-textMuted pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-sm font-semibold text-textMain" for="userText">Foydalanuvchi</label>
+                    <input type="text" id="userText" placeholder="Muallif ismini kiriting" class="w-full h-10 px-3 bg-background border border-border rounded-lg text-sm text-textMain placeholder-textMuted transition-colors">
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-6 py-4 border-t border-border bg-gray-50/50 flex items-center justify-end gap-3 rounded-b-2xl shrink-0">
+                <button onclick="closeModal('editModal')" class="px-4 py-2 rounded-lg text-sm font-medium text-textMain bg-surface border border-border hover:bg-gray-50 transition-colors shadow-sm">Bekor qilish</button>
+                <button onclick="saveQuestion()" class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary-hover transition-colors shadow-md shadow-primary/20">Saqlash</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-gray-900/40" onclick="closeModal('deleteModal')"></div>
+        
+        <!-- Modal Content -->
+        <div class="modal-content bg-surface w-full max-w-sm rounded-2xl shadow-xl border border-border relative z-10 p-6 text-center">
+            
+            <div class="w-12 h-12 rounded-full bg-danger-bg mx-auto flex items-center justify-center mb-4">
+                <i data-lucide="alert-triangle" class="w-6 h-6 text-danger"></i>
+            </div>
+            
+            <h2 class="text-lg font-bold text-textMain mb-2">Savolni o'chirish</h2>
+            <p class="text-sm text-textMuted mb-6">Ushbu savolni tizimdan butunlay o'chirib tashlamoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.</p>
+            
+            <input type="hidden" id="deleteId">
+            
+            <div class="flex items-center justify-center gap-3">
+                <button onclick="closeModal('deleteModal')" class="flex-1 px-4 py-2 rounded-lg text-sm font-medium text-textMain bg-surface border border-border hover:bg-gray-50 transition-colors shadow-sm">Bekor qilish</button>
+                <button onclick="confirmDelete()" class="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-danger hover:bg-danger-hover transition-colors shadow-sm shadow-danger/20">O'chirish</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- JavaScript functionality -->
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Initial Mock Data
+        let questions = [
+            { id: 1, text: "O'zbekiston Respublikasi Mustaqillik bayrami qachon nishonlanadi?", subject: "Tarix", author: "Abdullayev B." },
+            { id: 2, text: "Pifagor teoremasini formula ko'rinishida yozing va qaysi uchburchak uchun o'rinli ekanligini ayting.", subject: "Matematika", author: "Karimov N." },
+            { id: 3, text: "H2O formulasi qanday moddani ifodalaydi?", subject: "Fizika", author: "Zokirov S." },
+            { id: 4, text: "Kompyuterning asosiy xotirasi qanday turlarga bo'linadi?", subject: "Informatika", author: "Raximov A." },
+            { id: 5, text: "Past Simple zamoni uchun yordamchi fe'l qaysi?", subject: "Ingliz tili", author: "Umarova D." },
+            { id: 6, text: "Agar x = 5 bo'lsa, x² + 2x - 3 ni hisoblang.", subject: "Matematika", author: "Karimov N." }
+        ];
+
+        let filteredData = [...questions];
+
+        // Truncate long text
+        const truncate = (str, n) => {
+            return (str.length > n) ? str.slice(0, n-1) + '&hellip;' : str;
+        };
+
+        // Render Table
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const emptyState = document.getElementById('emptyState');
+            const paginationInfo = document.getElementById('paginationInfo');
+
+            tbody.innerHTML = '';
+
+            if (filteredData.length === 0) {
+                tbody.parentNode.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+            } else {
+                tbody.parentNode.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+
+                filteredData.forEach(q => {
+                    const tr = document.createElement('tr');
+                    tr.className = "table-row group border-b border-border last:border-0";
+                    tr.innerHTML = `
+                        <td class="px-6 py-4">
+                            <div class="font-medium text-sm text-textMain max-w-md truncate" title="${q.text}">
+                                ${q.text}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                                ${q.subject}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-textMuted">
+                            <div class="flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
+                                    ${q.author.charAt(0)}
+                                </div>
+                                <span class="truncate">${q.author}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex justify-end gap-2 text-textMuted">
+                                <button onclick="openModal('edit', ${q.id})" class="p-1.5 rounded-md hover:text-primary hover:bg-primary/10 transition-colors focus:ring-2 focus:ring-primary/50 outline-none" title="Tahrirlash">
+                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="openDeleteModal(${q.id})" class="p-1.5 rounded-md hover:text-danger hover:bg-danger-bg transition-colors focus:ring-2 focus:ring-danger/50 outline-none" title="O'chirish">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // Re-initialize icons for generated DOM
+            lucide.createIcons();
+
+            // Update footer info
+            paginationInfo.textContent = `Showing ${filteredData.length > 0 ? 1 : 0} to ${filteredData.length} of ${filteredData.length} results`;
+        }
+
+        // Search logic
+        function handleSearch() {
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            filteredData = questions.filter(q => 
+                q.text.toLowerCase().includes(term) || 
+                q.subject.toLowerCase().includes(term) ||
+                q.author.toLowerCase().includes(term)
+            );
+            renderTable();
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            handleSearch();
+        }
+
+        // Modals management
+        function openModal(mode, id = null) {
+            const modal = document.getElementById('editModal');
+            const title = document.getElementById('modalTitle');
+            const idInput = document.getElementById('editId');
+            const textInput = document.getElementById('questionText');
+            const subjectInput = document.getElementById('subjectDropdown');
+            const userInput = document.getElementById('userText');
+
+            // Reset borders/validation state if any (simple implementation)
+            textInput.classList.remove('border-danger');
+            subjectInput.classList.remove('border-danger');
+            userInput.classList.remove('border-danger');
+
+            if (mode === 'edit' && id !== null) {
+                const question = questions.find(q => q.id === id);
+                if(question) {
+                    title.textContent = "Savolni Tahrirlash";
+                    idInput.value = question.id;
+                    textInput.value = question.text;
+                    // Find option value or default
+                    subjectInput.value = question.subject;
+                    if(!subjectInput.value) subjectInput.value = ""; // fallback
+                    userInput.value = question.author;
+                }
+            } else {
+                title.textContent = "Savol Qo'shish";
+                idInput.value = '';
+                textInput.value = '';
+                subjectInput.value = '';
+                userInput.value = '';
+            }
+
+            modal.classList.add('active');
+            textInput.focus();
+        }
+
+        function openDeleteModal(id) {
+            document.getElementById('deleteId').value = id;
+            document.getElementById('deleteModal').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // Save & Delete Actions
+        function saveQuestion() {
+            const id = document.getElementById('editId').value;
+            const text = document.getElementById('questionText').value.trim();
+            const subject = document.getElementById('subjectDropdown').value;
+            const author = document.getElementById('userText').value.trim();
+
+            let isValid = true;
+            if(!text) { document.getElementById('questionText').classList.add('border-danger'); isValid=false; }
+            if(!subject) { document.getElementById('subjectDropdown').classList.add('border-danger'); isValid=false; }
+            if(!author) { document.getElementById('userText').classList.add('border-danger'); isValid=false; }
+
+            if(!isValid) return; // simple validation
+
+            if (id) {
+                // Update
+                const index = questions.findIndex(q => q.id == id);
+                if(index > -1) {
+                    questions[index] = { ...questions[index], text, subject, author };
+                }
+            } else {
+                // Add new
+                const nextId = questions.length > 0 ? Math.max(...questions.map(q => q.id)) + 1 : 1;
+                questions.unshift({ id: nextId, text, subject, author }); // add to top
+            }
+
+            closeModal('editModal');
+            handleSearch(); // apply filter & re-render
+        }
+
+        function confirmDelete() {
+            const id = document.getElementById('deleteId').value;
+            questions = questions.filter(q => q.id != id);
+            closeModal('deleteModal');
+            handleSearch();
+        }
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTable();
+            
+            // Close modals on Escape
+            document.addEventListener('keydown', (e) => {
+                if(e.key === 'Escape') {
+                    closeModal('editModal');
+                    closeModal('deleteModal');
+                }
+            });
+        });
+
+    </script>
+</body>
+</html>

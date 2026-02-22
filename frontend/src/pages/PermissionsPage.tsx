@@ -89,6 +89,29 @@ const PermissionsPage = () => {
 
     return (
         <div className="space-y-6">
+            {/* Page header */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h1 className="text-xl font-semibold tracking-tight">Ruxsatlar</h1>
+                    <p className="mt-0.5 text-sm text-muted-foreground">Tizim ruxsatlarini boshqarish</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="relative">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Qidirish..."
+                            className="pl-8 w-[220px]"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <Button onClick={() => { setSelectedPermission(null); setIsModalOpen(true); }}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Qo'shish
+                    </Button>
+                </div>
+            </div>
+
             <Card>
                 <CardContent className="pt-6">
                     {isLoading ? (
@@ -100,25 +123,9 @@ const PermissionsPage = () => {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead className="w-[80px]">ID</TableHead>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Created At</TableHead>
-                                    <TableHead className="text-right">
-                                        <div className="flex items-center justify-end gap-3">
-                                            <div className="relative font-normal">
-                                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                <Input
-                                                    placeholder="Search permissions..."
-                                                    className="pl-8 w-[200px] h-9"
-                                                    value={searchTerm}
-                                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                                />
-                                            </div>
-                                            <Button size="sm" onClick={() => { setSelectedPermission(null); setIsModalOpen(true); }}>
-                                                <Plus className="mr-1 h-4 w-4" />
-                                                Add Permission
-                                            </Button>
-                                        </div>
-                                    </TableHead>
+                                    <TableHead>Nomi</TableHead>
+                                    <TableHead>Yaratilgan sana</TableHead>
+                                    <TableHead className="text-right">Amallar</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>

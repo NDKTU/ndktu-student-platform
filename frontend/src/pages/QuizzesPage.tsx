@@ -164,28 +164,31 @@ const QuizzesPage = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-bold">Testlar</h1>
-                    <div className="flex gap-2">
-                        <div className="relative">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Testlarni qidiring..."
-                                className="pl-8 w-[250px]"
-                                value={searchTerm}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                        <Button onClick={handleCreateQuiz}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Test yaratish
-                        </Button>
-                    </div>
+            {/* Page header */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h1 className="text-xl font-semibold tracking-tight">Testlar</h1>
+                    <p className="mt-0.5 text-sm text-muted-foreground">Testlarni va topshiriqlarni boshqarish</p>
                 </div>
+                <div className="flex items-center gap-2">
+                    <div className="relative">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Qidirish..."
+                            className="pl-8 w-[220px]"
+                            value={searchTerm}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <Button onClick={handleCreateQuiz}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Test yaratish
+                    </Button>
+                </div>
+            </div>
 
-                {/* Filters */}
-                <Card>
+            {/* Filters */}
+            <Card>
                     <CardContent className="p-4">
                         <div className="flex flex-wrap gap-4 items-end">
                             <div className="flex flex-col gap-2 min-w-[200px] flex-1">
@@ -241,8 +244,7 @@ const QuizzesPage = () => {
                             )}
                         </div>
                     </CardContent>
-                </Card>
-            </div>
+            </Card>
 
 
             <Card>

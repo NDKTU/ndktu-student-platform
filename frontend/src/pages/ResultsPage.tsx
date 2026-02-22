@@ -11,7 +11,7 @@ import {
     TableRow,
 } from '@/components/ui/Table';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Loader2, FileText, FilterX } from 'lucide-react';
+import { Loader2, FileText, X } from 'lucide-react';
 import { Combobox } from '@/components/ui/Combobox';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -76,42 +76,54 @@ const ResultsPage = () => {
 
     return (
         <div className="space-y-6">
+            {/* Page header */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h1 className="text-xl font-semibold tracking-tight">Natijalar</h1>
+                    <p className="mt-0.5 text-sm text-muted-foreground">Talabalar test natijalarini va baholarini ko'rish</p>
+                </div>
+            </div>
+
+            {/* Filters */}
             <Card>
-                <CardContent className="pt-6">
-                    <div className="flex flex-wrap items-end gap-4">
+                <CardContent className="p-4">
+                    <div className="flex flex-wrap gap-4 items-end">
                         {!isStudent && (
-                            <div className="w-[200px]">
-                                <label className="text-sm font-medium mb-1.5 block">Guruh</label>
+                            <div className="flex flex-col gap-2 min-w-[200px] flex-1">
+                                <label className="text-sm font-medium">Guruh bo'yicha filtri</label>
                                 <Combobox
                                     options={groupOptions}
                                     value={selectedGroup}
                                     onChange={setSelectedGroup}
                                     placeholder="Barcha guruhlar"
+                                    searchPlaceholder="Guruhni qidirish..."
                                 />
                             </div>
                         )}
-                        <div className="w-[200px]">
-                            <label className="text-sm font-medium mb-1.5 block">Fan</label>
+                        <div className="flex flex-col gap-2 min-w-[200px] flex-1">
+                            <label className="text-sm font-medium">Fan bo'yicha filtri</label>
                             <Combobox
                                 options={subjectOptions}
                                 value={selectedSubject}
                                 onChange={setSelectedSubject}
                                 placeholder="Barcha fanlar"
+                                searchPlaceholder="Fanni qidirish..."
                             />
                         </div>
-                        <div className="w-[250px]">
-                            <label className="text-sm font-medium mb-1.5 block">Test</label>
+                        <div className="flex flex-col gap-2 min-w-[200px] flex-1">
+                            <label className="text-sm font-medium">Test bo'yicha filtri</label>
                             <Combobox
                                 options={quizOptions}
                                 value={selectedQuiz}
                                 onChange={setSelectedQuiz}
                                 placeholder="Barcha testlar"
+                                searchPlaceholder="Testni qidirish..."
                             />
                         </div>
-                        <div className="w-[120px]">
+                        <div className="flex flex-col gap-2 w-[120px]">
+                            <label className="text-sm font-medium">Ball</label>
                             <Input
                                 type="number"
-                                label="Ball"
                                 placeholder="..."
                                 value={selectedGrade}
                                 onChange={(e) => setSelectedGrade(e.target.value)}
@@ -121,7 +133,7 @@ const ResultsPage = () => {
                         </div>
                         {(selectedGroup || selectedSubject || selectedQuiz || selectedGrade) && (
                             <Button variant="ghost" className="mb-0.5" onClick={handleClearFilters}>
-                                <FilterX className="h-4 w-4 mr-2" />
+                                <X className="mr-2 h-4 w-4" />
                                 Tozalash
                             </Button>
                         )}

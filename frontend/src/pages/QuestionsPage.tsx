@@ -94,30 +94,34 @@ const QuestionsPage = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-end">
-                <div className="flex gap-2">
+            {/* Page header */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h1 className="text-xl font-semibold tracking-tight">Savollar</h1>
+                    <p className="mt-0.5 text-sm text-muted-foreground">Savollar bankini boshqarish</p>
+                </div>
+                <div className="flex items-center gap-2">
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Search questions..."
-                            className="pl-8 w-[250px]"
+                            placeholder="Qidirish..."
+                            className="pl-8 w-[220px]"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
                     <Button variant="outline" onClick={() => setIsUploadModalOpen(true)}>
                         <Upload className="mr-2 h-4 w-4" />
-                        Import Excel
+                        Excel import
                     </Button>
                     <Button onClick={handleCreateQuestion}>
                         <Plus className="mr-2 h-4 w-4" />
-                        Add Question
+                        Qo'shish
                     </Button>
                 </div>
             </div>
 
             <Card>
-
                 <CardContent>
                     {isQuestionsLoading ? (
                         <div className="flex justify-center p-8">
