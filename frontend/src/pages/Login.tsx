@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '@/services/api';
 import { hemisService } from '@/services/hemisService';
+import { BookOpen, GraduationCap, Users } from 'lucide-react';
 
 const staffLoginSchema = z.object({
     username: z.string().min(1, 'Foydalanuvchi nomi kiritilishi shart'),
@@ -92,107 +93,148 @@ export const Login: React.FC = () => {
     };
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900 px-4 py-12 sm:px-6 lg:px-8">
-            <div className="w-full max-w-md space-y-8 bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
-                <div className="text-center">
-                    <h2 className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-white">
-                        Tizimga kirish
-                    </h2>
-                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                        Quyida kirish usulini tanlang.
-                    </p>
-                </div>
+        <div className="flex min-h-screen bg-background">
+            {/* Left side - Branding/Graphic (Hidden on mobile) */}
+            <div className="hidden lg:flex lg:w-1/2 bg-primary/5 dark:bg-primary/10 flex-col justify-center items-center p-12 relative overflow-hidden">
+                <div className="absolute inset-0 bg-grid-slate-200/50 dark:bg-grid-slate-800/50 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] dark:[mask-image:linear-gradient(0deg,black,rgba(0,0,0,0.6))] -z-10" />
 
-                <div className="flex rounded-md bg-muted p-1 gap-1 bg-gray-100 p-1">
-                    <button
-                        type="button"
-                        onClick={() => toggleLoginType('staff')}
-                        className={`flex-1 rounded-sm px-3 py-1.5 text-sm font-medium transition-all ${loginType === 'staff'
-                                ? 'bg-white text-primary shadow-sm ring-1 ring-gray-200'
-                                : 'text-gray-500 hover:text-gray-900'
-                            }`}
-                    >
-                        Xodimlar
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => toggleLoginType('student')}
-                        className={`flex-1 rounded-sm px-3 py-1.5 text-sm font-medium transition-all ${loginType === 'student'
-                                ? 'bg-white text-primary shadow-sm ring-1 ring-gray-200'
-                                : 'text-gray-500 hover:text-gray-900'
-                            }`}
-                    >
-                        Talabalar (Hemis)
-                    </button>
-                </div>
-
-                {error && (
-                    <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive dark:text-red-400 bg-red-50 text-red-600 border border-red-200">
-                        {error}
+                <div className="max-w-md w-full space-y-8 text-center relative z-10">
+                    <div className="mx-auto w-24 h-24 bg-primary/10 rounded-3xl flex items-center justify-center mb-8 shadow-sm">
+                        <GraduationCap className="h-12 w-12 text-primary" />
                     </div>
-                )}
+                    <h1 className="text-4xl font-bold tracking-tight text-foreground">
+                        NDKTU Student Platform
+                    </h1>
+                    <p className="text-lg text-muted-foreground leading-relaxed">
+                        Talabalar va o'qituvchilar uchun yagona ta'lim portaliga xush kelibsiz.
+                    </p>
 
-                {loginType === 'staff' ? (
-                    <form className="mt-8 space-y-6" onSubmit={handleSubmitStaff(onStaffSubmit)}>
-                        <div className="space-y-4">
-                            <Input
-                                label="Foydalanuvchi nomi"
-                                type="text"
-                                autoComplete="username"
-                                error={errorsStaff.username?.message?.toString()}
-                                {...registerStaff('username')}
-                            />
-
-                            <Input
-                                label="Parol"
-                                type="password"
-                                autoComplete="current-password"
-                                error={errorsStaff.password?.message?.toString()}
-                                {...registerStaff('password')}
-                            />
+                    <div className="grid grid-cols-2 gap-4 mt-12">
+                        <div className="bg-background/60 backdrop-blur-sm p-4 rounded-xl border border-border/50 shadow-sm flex flex-col items-center gap-2">
+                            <BookOpen className="h-6 w-6 text-primary" />
+                            <span className="text-sm font-medium">Onlayn testlar</span>
                         </div>
-
-                        <div>
-                            <Button
-                                type="submit"
-                                className="w-full"
-                                isLoading={isSubmittingStaff}
-                            >
-                                Kirish
-                            </Button>
+                        <div className="bg-background/60 backdrop-blur-sm p-4 rounded-xl border border-border/50 shadow-sm flex flex-col items-center gap-2">
+                            <Users className="h-6 w-6 text-primary" />
+                            <span className="text-sm font-medium">O'zlashtirish nazorati</span>
                         </div>
-                    </form>
-                ) : (
-                    <form className="mt-8 space-y-6" onSubmit={handleSubmitStudent(onStudentSubmit)}>
-                        <div className="space-y-4">
-                            <Input
-                                label="Talaba ID / Login"
-                                type="text"
-                                autoComplete="username"
-                                error={errorsStudent.login?.message?.toString()}
-                                {...registerStudent('login')}
-                            />
+                    </div>
+                </div>
+            </div>
 
-                            <Input
-                                label="Parol"
-                                type="password"
-                                autoComplete="current-password"
-                                error={errorsStudent.password?.message?.toString()}
-                                {...registerStudent('password')}
-                            />
+            {/* Right side - Login Form */}
+            <div className="flex-1 flex items-center justify-center p-4 sm:p-8 lg:p-12">
+                <div className="w-full max-w-[400px] space-y-8 relative">
+                    {/* Mobile only header */}
+                    <div className="lg:hidden text-center mb-10">
+                        <div className="mx-auto w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
+                            <GraduationCap className="h-8 w-8 text-primary" />
                         </div>
+                        <h2 className="text-2xl font-bold text-foreground">NDKTU Portal</h2>
+                    </div>
 
-                        <div>
-                            <Button
-                                type="submit"
-                                className="w-full"
-                                isLoading={isSubmittingStudent}
-                            >
-                                Hemis orqali kirish
-                            </Button>
+                    <div className="text-center lg:text-left space-y-2">
+                        <h2 className="text-3xl font-bold tracking-tight text-foreground">
+                            Tizimga kirish
+                        </h2>
+                        <p className="text-muted-foreground">
+                            Hududni tanlang va ma'lumotlaringizni kiriting
+                        </p>
+                    </div>
+
+                    <div className="flex rounded-lg bg-muted p-1">
+                        <button
+                            type="button"
+                            onClick={() => toggleLoginType('staff')}
+                            className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-all ${loginType === 'staff'
+                                ? 'bg-background text-foreground shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                        >
+                            <Users className="h-4 w-4" />
+                            Xodimlar
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => toggleLoginType('student')}
+                            className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-all ${loginType === 'student'
+                                ? 'bg-background text-foreground shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                        >
+                            <GraduationCap className="h-4 w-4" />
+                            Talabalar
+                        </button>
+                    </div>
+
+                    {error && (
+                        <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive border border-destructive/20">
+                            {error}
                         </div>
-                    </form>
-                )}
+                    )}
+
+                    {loginType === 'staff' ? (
+                        <form className="mt-8 space-y-6" onSubmit={handleSubmitStaff(onStaffSubmit)}>
+                            <div className="space-y-4">
+                                <Input
+                                    label="Foydalanuvchi nomi"
+                                    type="text"
+                                    autoComplete="username"
+                                    error={errorsStaff.username?.message?.toString()}
+                                    {...registerStaff('username')}
+                                />
+
+                                <Input
+                                    label="Parol"
+                                    type="password"
+                                    autoComplete="current-password"
+                                    error={errorsStaff.password?.message?.toString()}
+                                    {...registerStaff('password')}
+                                />
+                            </div>
+
+                            <div className="pt-2">
+                                <Button
+                                    type="submit"
+                                    className="w-full h-11 text-base font-medium"
+                                    isLoading={isSubmittingStaff}
+                                >
+                                    Tizimga kirish
+                                </Button>
+                            </div>
+                        </form>
+                    ) : (
+                        <form className="mt-8 space-y-6" onSubmit={handleSubmitStudent(onStudentSubmit)}>
+                            <div className="space-y-4">
+                                <Input
+                                    label="Talaba ID / Login"
+                                    type="text"
+                                    autoComplete="username"
+                                    error={errorsStudent.login?.message?.toString()}
+                                    {...registerStudent('login')}
+                                />
+
+                                <Input
+                                    label="Parol"
+                                    type="password"
+                                    autoComplete="current-password"
+                                    error={errorsStudent.password?.message?.toString()}
+                                    {...registerStudent('password')}
+                                />
+                            </div>
+
+                            <div className="pt-2">
+                                <Button
+                                    type="submit"
+                                    className="w-full h-11 text-base font-medium"
+                                    isLoading={isSubmittingStudent}
+                                >
+                                    Hemis orqali kirish
+                                </Button>
+                            </div>
+                        </form>
+                    )}
+                </div>
             </div>
         </div>
     );

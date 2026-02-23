@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user.model import User
 from app.models.teacher.model import Teacher
 from app.models.subject_teacher.model import SubjectTeacher
+from app.models.student.model import Student
 
 from .schemas import (
     QuizCreateRequest,
@@ -104,9 +105,21 @@ class QuizRepository:
         stmt = select(Quiz).offset(request.offset).limit(request.limit)
 
         is_teacher = any(role.name.lower() == "teacher" for role in current_user.roles)
+        is_student = any(role.name.lower() == "student" for role in current_user.roles)
         teacher_filter = None
+        student_group_id = None
 
-        if is_teacher:
+        # Students always see quizzes for their group — even if they also have a Teacher role
+        if is_student:
+            student_stmt = select(Student.group_id).where(Student.user_id == current_user.id)
+            student_result = await session.execute(student_stmt)
+            student_group_id = student_result.scalar_one_or_none()
+            if student_group_id:
+                stmt = stmt.where(Quiz.group_id == student_group_id)
+            else:
+                stmt = stmt.where(Quiz.id == -1)  # no group → no quizzes
+
+        elif is_teacher:
             # Check teacher's groups
             gt_stmt = select(GroupTeacher.group_id).where(GroupTeacher.teacher_id == current_user.id)
             gt_result = await session.execute(gt_stmt)
@@ -128,7 +141,6 @@ class QuizRepository:
             else:
                 teacher_filter = Quiz.id == -1
 
-        if teacher_filter is not None:
             stmt = stmt.where(teacher_filter)
 
         if request.title:
@@ -151,7 +163,12 @@ class QuizRepository:
 
         count_stmt = select(func.count()).select_from(Quiz)
 
-        if teacher_filter is not None:
+        if is_student:
+            if student_group_id:
+                count_stmt = count_stmt.where(Quiz.group_id == student_group_id)
+            else:
+                count_stmt = count_stmt.where(Quiz.id == -1)
+        elif is_teacher and teacher_filter is not None:
             count_stmt = count_stmt.where(teacher_filter)
 
         if request.title:

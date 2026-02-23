@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Pagination } from '@/components/ui/Pagination';
 import { useResults } from '@/hooks/useResults';
@@ -19,18 +19,25 @@ import { Button } from '@/components/ui/Button';
 import { useGroups } from '@/hooks/useGroups';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useQuizzes } from '@/hooks/useQuizzes';
-
 import { useAuth } from '@/context/AuthContext';
 
 const ResultsPage = () => {
-    const [viewMode, setViewMode] = useState<'groups' | 'results'>('groups');
-    const [currentPage, setCurrentPage] = useState(1);
-    const pageSize = 10;
-    const { user } = useAuth();
+    const { user, isLoading: isAuthLoading } = useAuth();
     const navigate = useNavigate();
 
     const isStudent = user?.roles?.some(role => role.name.toLowerCase() === 'student');
     const isTeacher = user?.roles?.some(role => role.name.toLowerCase() === 'teacher');
+
+    const [viewMode, setViewMode] = useState<'groups' | 'results'>('groups');
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10;
+
+    // Once auth resolves, students go directly to results view
+    useEffect(() => {
+        if (!isAuthLoading && isStudent) {
+            setViewMode('results');
+        }
+    }, [isAuthLoading, isStudent]);
 
     // For student: filter results to their own data
     const userId = isStudent ? user?.id : undefined;
@@ -44,6 +51,7 @@ const ResultsPage = () => {
     const [selectedSubject, setSelectedSubject] = useState<string>('');
     const [selectedQuiz, setSelectedQuiz] = useState<string>('');
     const [selectedGrade, setSelectedGrade] = useState<string>('');
+    const [searchGroup, setSearchGroup] = useState<string>('');
 
     const parsedGroup = selectedGroup ? parseInt(selectedGroup, 10) : undefined;
     const parsedSubject = selectedSubject ? parseInt(selectedSubject, 10) : undefined;
@@ -51,7 +59,8 @@ const ResultsPage = () => {
     const parsedGrade = selectedGrade ? parseInt(selectedGrade, 10) : undefined;
 
     const { data: resultsData, isLoading: isResultsLoading } = useResults(
-        currentPage, pageSize, userId, parsedGrade, parsedGroup, parsedSubject, parsedQuiz
+        currentPage, pageSize, userId, parsedGrade, parsedGroup, parsedSubject, parsedQuiz,
+        !isAuthLoading  // only run query once auth is resolved
     );
 
     // Groups: scoped to teacher's assigned groups when logged in as teacher
@@ -97,13 +106,22 @@ const ResultsPage = () => {
     };
 
     if (viewMode === 'groups' && !isStudent) {
-        const activeGroups = groups;
+        const activeGroups = groups.filter((group) =>
+            group.name.toLowerCase().includes(searchGroup.toLowerCase())
+        );
         return (
             <div className="space-y-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-xl font-semibold tracking-tight">Natijalar</h1>
                         <p className="mt-0.5 text-sm text-muted-foreground">Guruhni tanlang</p>
+                    </div>
+                    <div className="w-full sm:w-64">
+                        <Input
+                            placeholder="Guruhni qidirish..."
+                            value={searchGroup}
+                            onChange={(e) => setSearchGroup(e.target.value)}
+                        />
                     </div>
                 </div>
 

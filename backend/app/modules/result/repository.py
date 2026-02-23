@@ -49,9 +49,12 @@ class ResultRepository:
         ).offset(request.offset).limit(request.limit)
 
         is_teacher = any(role.name.lower() == "teacher" for role in current_user.roles)
-        teacher_filter = None
-
-        if is_teacher:
+        is_student = any(role.name.lower() == "student" for role in current_user.roles)
+        
+        # Students always see only their own results — even if they also have a Teacher role
+        if is_student:
+            stmt = stmt.where(Result.user_id == current_user.id)
+        elif is_teacher:
             # Get teacher's assigned groups (group_teachers.teacher_id = users.id)
             gt_stmt = select(GroupTeacher.group_id).where(GroupTeacher.teacher_id == current_user.id)
             gt_result = await session.execute(gt_stmt)
@@ -66,8 +69,6 @@ class ResultRepository:
             st_result = await session.execute(st_stmt)
             allowed_subject_ids = st_result.scalars().all()
 
-            # AND logic: result must match an assigned group AND an assigned subject
-            # Edge cases: if teacher has only one of the two, apply only that filter
             if allowed_group_ids and allowed_subject_ids:
                 teacher_filter = (
                     Result.group_id.in_(allowed_group_ids)
@@ -78,10 +79,8 @@ class ResultRepository:
             elif allowed_subject_ids:
                 teacher_filter = Result.subject_id.in_(allowed_subject_ids)
             else:
-                # Teacher but no assignments — show nothing
                 teacher_filter = Result.id == -1
 
-        if teacher_filter is not None:
             stmt = stmt.where(teacher_filter)
 
         if request.user_id:
@@ -104,7 +103,9 @@ class ResultRepository:
 
         count_stmt = select(func.count()).select_from(Result)
 
-        if teacher_filter is not None:
+        if is_student:
+            count_stmt = count_stmt.where(Result.user_id == current_user.id)
+        elif is_teacher and teacher_filter is not None:
             count_stmt = count_stmt.where(teacher_filter)
 
         if request.user_id:
