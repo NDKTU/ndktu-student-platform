@@ -15,6 +15,23 @@ export interface GroupListResponse {
     groups: Group[];
 }
 
+export interface GroupStudent {
+    id: number;
+    full_name: string;
+    first_name: string;
+    last_name: string;
+    student_id_number: string;
+    group_id: number | null;
+    user_id: number | null;
+}
+
+export interface GroupStudentListResponse {
+    total: number;
+    page: number;
+    limit: number;
+    students: GroupStudent[];
+}
+
 export const groupService = {
     getGroups: async (page = 1, limit = 10, search = '', teacher_id?: number) => {
         const params: any = { page, limit };
@@ -42,5 +59,12 @@ export const groupService = {
 
     deleteGroup: async (id: number) => {
         await api.delete(`/group/${id}`);
+    },
+
+    getGroupStudents: async (groupId: number, page = 1, limit = 200, search?: string): Promise<GroupStudentListResponse> => {
+        const params: Record<string, unknown> = { page, limit };
+        if (search) params.search = search;
+        const response = await api.get<GroupStudentListResponse>(`/group/${groupId}/students`, { params });
+        return response.data;
     },
 };

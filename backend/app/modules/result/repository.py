@@ -3,7 +3,7 @@ import logging
 from fastapi import HTTPException, status
 from app.models.results.model import Result
 from app.models.user.model import User
-from sqlalchemy import func, select, or_
+from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.teacher.model import Teacher
@@ -52,27 +52,34 @@ class ResultRepository:
         teacher_filter = None
 
         if is_teacher:
-            # Check teacher's groups
+            # Get teacher's assigned groups (group_teachers.teacher_id = users.id)
             gt_stmt = select(GroupTeacher.group_id).where(GroupTeacher.teacher_id == current_user.id)
             gt_result = await session.execute(gt_stmt)
             allowed_group_ids = gt_result.scalars().all()
 
-            # Check teacher's subjects
-            st_stmt = select(SubjectTeacher.subject_id).join(Teacher, Teacher.id == SubjectTeacher.teacher_id).where(Teacher.user_id == current_user.id)
+            # Get teacher's assigned subjects (subject_teachers.teacher_id = teachers.id)
+            st_stmt = (
+                select(SubjectTeacher.subject_id)
+                .join(Teacher, Teacher.id == SubjectTeacher.teacher_id)
+                .where(Teacher.user_id == current_user.id)
+            )
             st_result = await session.execute(st_stmt)
             allowed_subject_ids = st_result.scalars().all()
 
-            # Create an OR condition for allowed groups or subjects
-            conditions = []
-            if allowed_group_ids:
-                conditions.append(Result.group_id.in_(allowed_group_ids))
-            if allowed_subject_ids:
-                conditions.append(Result.subject_id.in_(allowed_subject_ids))
-            
-            if conditions:
-                teacher_filter = or_(*conditions)
+            # AND logic: result must match an assigned group AND an assigned subject
+            # Edge cases: if teacher has only one of the two, apply only that filter
+            if allowed_group_ids and allowed_subject_ids:
+                teacher_filter = (
+                    Result.group_id.in_(allowed_group_ids)
+                    & Result.subject_id.in_(allowed_subject_ids)
+                )
+            elif allowed_group_ids:
+                teacher_filter = Result.group_id.in_(allowed_group_ids)
+            elif allowed_subject_ids:
+                teacher_filter = Result.subject_id.in_(allowed_subject_ids)
             else:
-                teacher_filter = Result.id == -1 # User is teacher but has no groups or subjects, show nothing
+                # Teacher but no assignments — show nothing
+                teacher_filter = Result.id == -1
 
         if teacher_filter is not None:
             stmt = stmt.where(teacher_filter)

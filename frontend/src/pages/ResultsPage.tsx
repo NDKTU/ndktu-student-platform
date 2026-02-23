@@ -11,7 +11,7 @@ import {
     TableRow,
 } from '@/components/ui/Table';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Loader2, FileText, X } from 'lucide-react';
+import { Loader2, FileText, X, ArrowLeft, Users, ChevronRight } from 'lucide-react';
 import { Combobox } from '@/components/ui/Combobox';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -23,6 +23,7 @@ import { useQuizzes } from '@/hooks/useQuizzes';
 import { useAuth } from '@/context/AuthContext';
 
 const ResultsPage = () => {
+    const [viewMode, setViewMode] = useState<'groups' | 'results'>('groups');
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 10;
     const { user } = useAuth();
@@ -31,8 +32,13 @@ const ResultsPage = () => {
     const isStudent = user?.roles?.some(role => role.name.toLowerCase() === 'student');
     const isTeacher = user?.roles?.some(role => role.name.toLowerCase() === 'teacher');
     
+    // For student: filter results to their own data
     const userId = isStudent ? user?.id : undefined;
-    const teacherId = isTeacher ? user?.teacher?.id : undefined;
+
+    // group_teachers.teacher_id = users.id
+    const groupTeacherId = isTeacher ? user?.id : undefined;
+    // subject_teachers.teacher_id = teachers.id (the Teacher row id, not User.id)
+    const subjectTeacherId = isTeacher ? user?.teacher?.id : undefined;
 
     const [selectedGroup, setSelectedGroup] = useState<string>('');
     const [selectedSubject, setSelectedSubject] = useState<string>('');
@@ -48,11 +54,14 @@ const ResultsPage = () => {
         currentPage, pageSize, userId, parsedGrade, parsedGroup, parsedSubject, parsedQuiz
     );
 
-    const { data: groupsData } = useGroups(1, 100, '', teacherId);
-    const { data: subjectsData } = useSubjects(1, 100, '', teacherId);
+    // Groups: scoped to teacher's assigned groups when logged in as teacher
+    const { data: groupsData, isLoading: isGroupsLoading } = useGroups(1, 100, '', groupTeacherId);
+    // Subjects: backend auto-filters by current user's role; also pass teacher_id for optional explicit filter
+    const { data: subjectsData } = useSubjects(1, 100, '', subjectTeacherId);
     const { data: quizzesData } = useQuizzes(1, 100);
 
-    const groupOptions = groupsData?.groups.map(g => ({ value: String(g.id), label: g.name })) || [];
+    const groups = groupsData?.groups || [];
+
     const subjectOptions = subjectsData?.subjects.map(s => ({ value: String(s.id), label: s.name })) || [];
     const quizOptions = quizzesData?.quizzes.map(q => ({ value: String(q.id), label: q.title })) || [];
 
@@ -60,10 +69,22 @@ const ResultsPage = () => {
     const totalPages = resultsData ? Math.ceil(resultsData.total / pageSize) : 1;
 
     const handleClearFilters = () => {
-        setSelectedGroup('');
         setSelectedSubject('');
         setSelectedQuiz('');
         setSelectedGrade('');
+        setCurrentPage(1);
+    };
+
+    const handleGroupClick = (groupId: number) => {
+        setSelectedGroup(String(groupId));
+        setViewMode('results');
+        setCurrentPage(1);
+    };
+
+    const handleBackToGroups = () => {
+        setSelectedGroup('');
+        handleClearFilters();
+        setViewMode('groups');
         setCurrentPage(1);
     };
 
@@ -74,32 +95,75 @@ const ResultsPage = () => {
         navigate(`/results/answers?${params.toString()}`);
     };
 
+    if (viewMode === 'groups' && !isStudent) {
+        const activeGroups = groups;
+        return (
+            <div className="space-y-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h1 className="text-xl font-semibold tracking-tight">Natijalar</h1>
+                        <p className="mt-0.5 text-sm text-muted-foreground">Guruhni tanlang</p>
+                    </div>
+                </div>
+
+                <Card>
+                    <CardContent className="p-0">
+                        {isGroupsLoading ? (
+                            <div className="flex justify-center p-8">
+                                <Loader2 className="h-8 w-8 animate-spin" />
+                            </div>
+                        ) : activeGroups.length === 0 ? (
+                            <div className="flex justify-center p-8 text-muted-foreground">
+                                Guruhlar topilmadi.
+                            </div>
+                        ) : (
+                            <div className="divide-y">
+                                {activeGroups.map((group) => (
+                                    <div 
+                                        key={group.id} 
+                                        className="flex items-center justify-between p-4 hover:bg-muted/50 cursor-pointer transition-colors"
+                                        onClick={() => handleGroupClick(group.id)}
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="bg-primary/10 p-2 rounded-md">
+                                                <Users className="h-5 w-5 text-primary" />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-medium">{group.name}</h3>
+                                            </div>
+                                        </div>
+                                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-6">
             {/* Page header */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                {!isStudent && (
+                    <Button variant="outline" size="icon" onClick={handleBackToGroups}>
+                        <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                )}
                 <div>
-                    <h1 className="text-xl font-semibold tracking-tight">Natijalar</h1>
+                    <h1 className="text-xl font-semibold tracking-tight">
+                        {!isStudent ? (groups.find(g => g.id === parsedGroup)?.name || 'Natijalar') : 'Natijalar'}
+                    </h1>
                     <p className="mt-0.5 text-sm text-muted-foreground">Talabalar test natijalarini va baholarini ko'rish</p>
                 </div>
             </div>
 
             {/* Filters */}
-            <Card>
+        <Card>
                 <CardContent className="p-4">
                     <div className="flex flex-wrap gap-4 items-end">
-                        {!isStudent && (
-                            <div className="flex flex-col gap-2 min-w-[200px] flex-1">
-                                <label className="text-sm font-medium">Guruh bo'yicha filtri</label>
-                                <Combobox
-                                    options={groupOptions}
-                                    value={selectedGroup}
-                                    onChange={setSelectedGroup}
-                                    placeholder="Barcha guruhlar"
-                                    searchPlaceholder="Guruhni qidirish..."
-                                />
-                            </div>
-                        )}
                         <div className="flex flex-col gap-2 min-w-[200px] flex-1">
                             <label className="text-sm font-medium">Fan bo'yicha filtri</label>
                             <Combobox
@@ -131,7 +195,7 @@ const ResultsPage = () => {
                                 max={5}
                             />
                         </div>
-                        {(selectedGroup || selectedSubject || selectedQuiz || selectedGrade) && (
+                        {(selectedSubject || selectedQuiz || selectedGrade) && (
                             <Button variant="ghost" className="mb-0.5" onClick={handleClearFilters}>
                                 <X className="mr-2 h-4 w-4" />
                                 Tozalash

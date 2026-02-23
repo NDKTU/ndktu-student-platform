@@ -9,6 +9,15 @@ export const useGroups = (page: number, limit: number, search: string, teacherId
     });
 };
 
+export const useGroupStudents = (groupId: number | undefined, search?: string) => {
+    return useQuery({
+        queryKey: ['group-students', groupId, search],
+        queryFn: () => groupService.getGroupStudents(groupId!, 1, 200, search),
+        enabled: !!groupId,
+        placeholderData: (previousData) => previousData,
+    });
+};
+
 export const useGroup = (id: number) => {
     return useQuery({
         queryKey: ['group', id],

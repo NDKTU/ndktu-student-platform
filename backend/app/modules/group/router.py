@@ -14,6 +14,8 @@ from .schemas import (
     GroupListRequest,
     GroupListResponse,
 )
+from app.modules.student.repository import student_repository
+from app.modules.student.schemas import StudentListResponse, StudentListRequest
 # from app.core.cache import clear_cache, custom_key_builder
 
 logger = logging.getLogger(__name__)
@@ -62,6 +64,20 @@ async def list_groups(
     return await get_group_repository.list_groups(
         session=session, request=data
     )
+
+
+@router.get("/{group_id}/students", response_model=StudentListResponse)
+async def get_group_students(
+    group_id: int,
+    page: int = 1,
+    limit: int = 100,
+    search: str | None = None,
+    session: AsyncSession = Depends(db_helper.session_getter),
+    _: PermissionRequired = Depends(PermissionRequired("read:student")),
+):
+    """Return all students belonging to the specified group."""
+    request = StudentListRequest(page=page, limit=limit, search=search, group_id=group_id)
+    return await student_repository.list_students(session=session, request=request)
 
 
 @router.put("/{group_id}", response_model=GroupCreateResponse, dependencies=[Depends(RateLimiter(times=5, seconds=60))])
