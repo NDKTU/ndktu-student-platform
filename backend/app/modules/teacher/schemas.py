@@ -97,3 +97,14 @@ class TeacherGroupAssignRequest(BaseModel):
 class TeacherSubjectAssignRequest(BaseModel):
     teacher_id: int
     subject_ids: list[int]
+
+class TeacherAssignedSubjectsResponse(BaseModel):
+    id: int
+    user_id: int
+    first_name: str
+    last_name: str
+    third_name: str
+    full_name: str
+    subject_teachers: list[TeacherSubjectTeacherInfo]
+
+    model_config = ConfigDict(from_attributes=True)

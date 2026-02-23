@@ -31,7 +31,7 @@ const ResultsPage = () => {
 
     const isStudent = user?.roles?.some(role => role.name.toLowerCase() === 'student');
     const isTeacher = user?.roles?.some(role => role.name.toLowerCase() === 'teacher');
-    
+
     // For student: filter results to their own data
     const userId = isStudent ? user?.id : undefined;
 
@@ -69,6 +69,7 @@ const ResultsPage = () => {
     const totalPages = resultsData ? Math.ceil(resultsData.total / pageSize) : 1;
 
     const handleClearFilters = () => {
+        setSelectedGroup('');
         setSelectedSubject('');
         setSelectedQuiz('');
         setSelectedGrade('');
@@ -119,8 +120,8 @@ const ResultsPage = () => {
                         ) : (
                             <div className="divide-y">
                                 {activeGroups.map((group) => (
-                                    <div 
-                                        key={group.id} 
+                                    <div
+                                        key={group.id}
                                         className="flex items-center justify-between p-4 hover:bg-muted/50 cursor-pointer transition-colors"
                                         onClick={() => handleGroupClick(group.id)}
                                     >
@@ -161,9 +162,25 @@ const ResultsPage = () => {
             </div>
 
             {/* Filters */}
-        <Card>
+            <Card>
                 <CardContent className="p-4">
                     <div className="flex flex-wrap gap-4 items-end">
+                        {/* Group filter — visible for admin/teacher in results view */}
+                        {!isStudent && (
+                            <div className="flex flex-col gap-2 min-w-[200px] flex-1">
+                                <label className="text-sm font-medium">Guruh bo'yicha filtri</label>
+                                <Combobox
+                                    options={groups.map(g => ({ value: String(g.id), label: g.name }))}
+                                    value={selectedGroup}
+                                    onChange={(val) => {
+                                        setSelectedGroup(val || '');
+                                        setCurrentPage(1);
+                                    }}
+                                    placeholder="Barcha guruhlar"
+                                    searchPlaceholder="Guruhni qidirish..."
+                                />
+                            </div>
+                        )}
                         <div className="flex flex-col gap-2 min-w-[200px] flex-1">
                             <label className="text-sm font-medium">Fan bo'yicha filtri</label>
                             <Combobox
@@ -195,7 +212,7 @@ const ResultsPage = () => {
                                 max={5}
                             />
                         </div>
-                        {(selectedSubject || selectedQuiz || selectedGrade) && (
+                        {(selectedGroup || selectedSubject || selectedQuiz || selectedGrade) && (
                             <Button variant="ghost" className="mb-0.5" onClick={handleClearFilters}>
                                 <X className="mr-2 h-4 w-4" />
                                 Tozalash

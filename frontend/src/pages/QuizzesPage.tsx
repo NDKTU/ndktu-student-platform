@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { Pagination } from '@/components/ui/Pagination';
 import type { Quiz, QuizCreateRequest } from '@/services/quizService';
 import type { Subject } from '@/services/subjectService';
@@ -42,6 +43,9 @@ const quizSchema = z.object({
 type QuizFormValues = z.infer<typeof quizSchema>;
 
 const QuizzesPage = () => {
+    const { user } = useAuth();
+    const isTeacher = user?.roles?.some(r => r.name.toLowerCase() === 'teacher');
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -180,70 +184,72 @@ const QuizzesPage = () => {
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <Button onClick={handleCreateQuiz}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Test yaratish
-                    </Button>
+                    {!isTeacher && (
+                        <Button onClick={handleCreateQuiz}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Test yaratish
+                        </Button>
+                    )}
                 </div>
             </div>
 
             {/* Filters */}
             <Card>
-                    <CardContent className="p-4">
-                        <div className="flex flex-wrap gap-4 items-end">
-                            <div className="flex flex-col gap-2 min-w-[200px] flex-1">
-                                <label className="text-sm font-medium">Fan bo'yicha filtri</label>
-                                <Combobox
-                                    options={allSubjects.map(s => ({ value: s.id.toString(), label: s.name }))}
-                                    value={filterSubjectId?.toString()}
-                                    onChange={(val) => setFilterSubjectId(val ? parseInt(val) : undefined)}
-                                    placeholder="Barcha fanlar"
-                                    searchPlaceholder="Fanni qidirish..."
-                                />
-                            </div>
-                            <div className="flex flex-col gap-2 min-w-[200px] flex-1">
-                                <label className="text-sm font-medium">Guruh bo'yicha filtri</label>
-                                <Combobox
-                                    options={allGroups.map(g => ({ value: g.id.toString(), label: g.name }))}
-                                    value={filterGroupId?.toString()}
-                                    onChange={(val) => setFilterGroupId(val ? parseInt(val) : undefined)}
-                                    placeholder="Barcha guruhlar"
-                                    searchPlaceholder="Guruhni qidirish..."
-                                />
-                            </div>
-                            <div className="flex flex-col gap-2 min-w-[200px] flex-1">
-                                <label className="text-sm font-medium">Foydalanuvchi bo'yicha filtri</label>
-                                <Combobox
-                                    options={allUsers.map(u => ({ value: u.id.toString(), label: getUserDisplayName(u) }))}
-                                    value={filterUserId?.toString()}
-                                    onChange={(val) => setFilterUserId(val ? parseInt(val) : undefined)}
-                                    placeholder="Barcha foydalanuvchilar"
-                                    searchPlaceholder="Foydalanuvchini qidirish..."
-                                />
-                            </div>
-                            <div className="flex flex-col gap-2 w-[150px]">
-                                <label className="text-sm font-medium">Holat</label>
-                                <select
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                    value={filterIsActive === undefined ? 'all' : filterIsActive.toString()}
-                                    onChange={(e) => {
-                                        const val = e.target.value;
-                                        setFilterIsActive(val === 'all' ? undefined : val === 'true');
-                                    }}
-                                >
-                                    <option value="all">Barchasi</option>
-                                    <option value="true">Faol</option>
-                                    <option value="false">Faol emas</option>
-                                </select>
-                            </div>
-                            {hasActiveFilters && (
-                                <Button variant="ghost" onClick={clearFilters} className="mb-0.5">
-                                    <X className="mr-2 h-4 w-4" />
-                                    Tozalash
-                                </Button>
-                            )}
+                <CardContent className="p-4">
+                    <div className="flex flex-wrap gap-4 items-end">
+                        <div className="flex flex-col gap-2 min-w-[200px] flex-1">
+                            <label className="text-sm font-medium">Fan bo'yicha filtri</label>
+                            <Combobox
+                                options={allSubjects.map(s => ({ value: s.id.toString(), label: s.name }))}
+                                value={filterSubjectId?.toString()}
+                                onChange={(val) => setFilterSubjectId(val ? parseInt(val) : undefined)}
+                                placeholder="Barcha fanlar"
+                                searchPlaceholder="Fanni qidirish..."
+                            />
                         </div>
-                    </CardContent>
+                        <div className="flex flex-col gap-2 min-w-[200px] flex-1">
+                            <label className="text-sm font-medium">Guruh bo'yicha filtri</label>
+                            <Combobox
+                                options={allGroups.map(g => ({ value: g.id.toString(), label: g.name }))}
+                                value={filterGroupId?.toString()}
+                                onChange={(val) => setFilterGroupId(val ? parseInt(val) : undefined)}
+                                placeholder="Barcha guruhlar"
+                                searchPlaceholder="Guruhni qidirish..."
+                            />
+                        </div>
+                        <div className="flex flex-col gap-2 min-w-[200px] flex-1">
+                            <label className="text-sm font-medium">Foydalanuvchi bo'yicha filtri</label>
+                            <Combobox
+                                options={allUsers.map(u => ({ value: u.id.toString(), label: getUserDisplayName(u) }))}
+                                value={filterUserId?.toString()}
+                                onChange={(val) => setFilterUserId(val ? parseInt(val) : undefined)}
+                                placeholder="Barcha foydalanuvchilar"
+                                searchPlaceholder="Foydalanuvchini qidirish..."
+                            />
+                        </div>
+                        <div className="flex flex-col gap-2 w-[150px]">
+                            <label className="text-sm font-medium">Holat</label>
+                            <select
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                value={filterIsActive === undefined ? 'all' : filterIsActive.toString()}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    setFilterIsActive(val === 'all' ? undefined : val === 'true');
+                                }}
+                            >
+                                <option value="all">Barchasi</option>
+                                <option value="true">Faol</option>
+                                <option value="false">Faol emas</option>
+                            </select>
+                        </div>
+                        {hasActiveFilters && (
+                            <Button variant="ghost" onClick={clearFilters} className="mb-0.5">
+                                <X className="mr-2 h-4 w-4" />
+                                Tozalash
+                            </Button>
+                        )}
+                    </div>
+                </CardContent>
             </Card>
 
 
@@ -269,7 +275,7 @@ const QuizzesPage = () => {
                                     <TableHead>Faol</TableHead>
                                     <TableHead>Fan</TableHead>
                                     <TableHead>Guruh</TableHead>
-                                    <TableHead className="text-right">Amallar</TableHead>
+                                    {!isTeacher && <TableHead className="text-right">Amallar</TableHead>}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -280,38 +286,46 @@ const QuizzesPage = () => {
                                         <TableCell>{quiz.duration} daq</TableCell>
                                         <TableCell><span className="font-mono bg-muted px-2 py-1 rounded">{quiz.pin}</span></TableCell>
                                         <TableCell>
-                                            <div className="flex items-center space-x-2">
-                                                <Switch
-                                                    checked={quiz.is_active}
-                                                    onCheckedChange={() => handleToggleStatus(quiz)}
-                                                    disabled={isUpdatingStatus === quiz.id || updateQuizMutation.isPending}
-                                                />
-                                                <span className={`text-xs ${quiz.is_active ? 'text-green-600 font-medium' : 'text-muted-foreground'}`}>
+                                            {isTeacher ? (
+                                                <span className={`text-xs font-medium ${quiz.is_active ? 'text-green-600' : 'text-muted-foreground'}`}>
                                                     {quiz.is_active ? 'Faol' : 'Faol emas'}
                                                 </span>
-                                            </div>
+                                            ) : (
+                                                <div className="flex items-center space-x-2">
+                                                    <Switch
+                                                        checked={quiz.is_active}
+                                                        onCheckedChange={() => handleToggleStatus(quiz)}
+                                                        disabled={isUpdatingStatus === quiz.id || updateQuizMutation.isPending}
+                                                    />
+                                                    <span className={`text-xs ${quiz.is_active ? 'text-green-600 font-medium' : 'text-muted-foreground'}`}>
+                                                        {quiz.is_active ? 'Faol' : 'Faol emas'}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </TableCell>
                                         <TableCell className="capitalize">{getSubjectName(quiz.subject_id)}</TableCell>
                                         <TableCell className="capitalize">{getGroupName(quiz.group_id)}</TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => handleEditQuiz(quiz)}
-                                                >
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="text-destructive hover:text-destructive"
-                                                    onClick={() => handleDeleteClick(quiz)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </TableCell>
+                                        {!isTeacher && (
+                                            <TableCell className="text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => handleEditQuiz(quiz)}
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="text-destructive hover:text-destructive"
+                                                        onClick={() => handleDeleteClick(quiz)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        )}
                                     </TableRow>
                                 ))}
                             </TableBody>

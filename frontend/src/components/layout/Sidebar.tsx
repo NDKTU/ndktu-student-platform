@@ -90,6 +90,12 @@ const adminSections: NavSection[] = [
 
 const teacherSections: NavSection[] = [
     {
+        label: 'Fanlar',
+        items: [
+            { name: 'Mening fanlarim', href: '/teacher-subjects', icon: BookOpen },
+        ],
+    },
+    {
         label: 'Testlar',
         items: [
             { name: 'Savollar', href: '/questions', icon: FileQuestion },

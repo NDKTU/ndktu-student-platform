@@ -22,6 +22,7 @@ import QuestionFormPage from '@/pages/QuestionFormPage';
 import QuizTestPage from '@/pages/QuizTestPage';
 import UserAnswersPage from '@/pages/UserAnswersPage';
 import TeacherGroupsPage from '@/pages/TeacherGroupsPage';
+import TeacherSubjectsPage from '@/pages/TeacherSubjectsPage';
 
 const ProtectedRoute = () => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -93,6 +94,7 @@ function App() {
                 {/* Admin + Teacher routes */}
                 <Route path="/subjects" element={<RoleRoute allowedRoles={['admin', 'teacher']}><SubjectsPage /></RoleRoute>} />
                 <Route path="/teacher-groups" element={<RoleRoute allowedRoles={['admin', 'teacher']}><TeacherGroupsPage /></RoleRoute>} />
+                <Route path="/teacher-subjects" element={<RoleRoute allowedRoles={['admin', 'teacher']}><TeacherSubjectsPage /></RoleRoute>} />
                 <Route path="/questions" element={<RoleRoute allowedRoles={['admin', 'teacher']}><QuestionsPage /></RoleRoute>} />
                 <Route path="/questions/create" element={<RoleRoute allowedRoles={['admin', 'teacher']}><QuestionFormPage /></RoleRoute>} />
                 <Route path="/questions/:id/edit" element={<RoleRoute allowedRoles={['admin', 'teacher']}><QuestionFormPage /></RoleRoute>} />

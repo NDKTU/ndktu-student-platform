@@ -14,6 +14,21 @@ export interface SubjectListResponse {
     subjects: Subject[];
 }
 
+export interface TeacherSubjectTeacherInfo {
+    subject_id: number;
+    subject: Subject;
+}
+
+export interface TeacherAssignedSubjectsResponse {
+    id: number;
+    user_id: number;
+    first_name: string;
+    last_name: string;
+    third_name: string;
+    full_name: string;
+    subject_teachers: TeacherSubjectTeacherInfo[];
+}
+
 export const subjectService = {
     getSubjects: async (page = 1, limit = 10, search = '', teacher_id?: number) => {
         const params: any = { page, limit };
@@ -21,6 +36,11 @@ export const subjectService = {
         if (teacher_id) params.teacher_id = teacher_id;
 
         const response = await api.get<SubjectListResponse>('/subject/', { params });
+        return response.data;
+    },
+
+    getAssignedSubjects: async (userId: number): Promise<TeacherAssignedSubjectsResponse> => {
+        const response = await api.get<TeacherAssignedSubjectsResponse>(`/teacher/assigned_subjects/by-user/${userId}`);
         return response.data;
     },
 

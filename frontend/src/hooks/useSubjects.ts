@@ -9,6 +9,14 @@ export const useSubjects = (page = 1, limit = 10, search = '', teacher_id?: numb
     });
 };
 
+export const useTeacherAssignedSubjects = (userId?: number) => {
+    return useQuery({
+        queryKey: ['teacherAssignedSubjects', userId],
+        queryFn: () => subjectService.getAssignedSubjects(userId!),
+        enabled: !!userId,
+    });
+};
+
 export const useSubject = (id: number) => {
     return useQuery({
         queryKey: ['subject', id],

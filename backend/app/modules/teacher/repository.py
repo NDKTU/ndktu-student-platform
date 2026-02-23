@@ -261,4 +261,21 @@ class TeacherRepository:
                 detail="Database error while assigning subjects"
             )
 
+    async def get_assigned_subjects_by_user(
+        self, session: AsyncSession, user_id: int
+    ) -> Teacher:
+        stmt = select(Teacher).options(
+            selectinload(Teacher.subject_teachers).selectinload(SubjectTeacher.subject)
+        ).where(Teacher.user_id == user_id)
+        
+        result = await session.execute(stmt)
+        teacher = result.scalar_one_or_none()
+
+        if not teacher:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Teacher not found for this user"
+            )
+
+        return teacher
+
 get_teacher_repository = TeacherRepository()
