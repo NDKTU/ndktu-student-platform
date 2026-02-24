@@ -1,0 +1,142 @@
+name: CI – Test & Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ──────────────────────────────────────────
+  # JOB 1: Backend Tests
+  # ──────────────────────────────────────────
+  backend-test:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: test_db
+        ports:
+          - 5436:5432
+        options: >-
+          --health-cmd "pg_isready -U ${{ secrets.POSTGRES_USER }} -d test_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # ── Root .env (docker-compose variables) ──
+      - name: Create root .env
+        run: |
+          cat > .env <<EOF
+          POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+          LOGFIRE_PROJECT_NAME=${{ secrets.LOGFIRE_PROJECT_NAME }}
+          LOGFIRE_TOKEN=${{ secrets.LOGFIRE_TOKEN }}
+          EOF
+
+      # ── Backend app .env ──
+      - name: Create backend/.env
+        working-directory: backend
+        run: |
+          cat > .env <<EOF
+          APP_CONFIG__DATABASE__URL=${{ secrets.APP_CONFIG__DATABASE__URL }}
+          APP_CONFIG__DATABASE__TEST_URL=${{ secrets.APP_CONFIG__DATABASE__TEST_URL }}
+          APP_CONFIG__DATABASE__ECHO=${{ secrets.APP_CONFIG__DATABASE__ECHO }}
+          APP_CONFIG__DATABASE__ECHO_POOL=${{ secrets.APP_CONFIG__DATABASE__ECHO_POOL }}
+          APP_CONFIG__DATABASE__POOL_SIZE=${{ secrets.APP_CONFIG__DATABASE__POOL_SIZE }}
+          APP_CONFIG__DATABASE__MAX_OVERFLOW=${{ secrets.APP_CONFIG__DATABASE__MAX_OVERFLOW }}
+          APP_CONFIG__SERVER__APP_PATH=${{ secrets.APP_CONFIG__SERVER__APP_PATH }}
+          APP_CONFIG__SERVER__HOST=${{ secrets.APP_CONFIG__SERVER__HOST }}
+          APP_CONFIG__SERVER__PORT=${{ secrets.APP_CONFIG__SERVER__PORT }}
+          APP_CONFIG__JWT__ACCESS_TOKEN_SECRET=${{ secrets.APP_CONFIG__JWT__ACCESS_TOKEN_SECRET }}
+          APP_CONFIG__JWT__REFRESH_TOKEN_SECRET=${{ secrets.APP_CONFIG__JWT__REFRESH_TOKEN_SECRET }}
+          APP_CONFIG__JWT__ACCESS_TOKEN_EXPIRES_MINUTES=${{ secrets.APP_CONFIG__JWT__ACCESS_TOKEN_EXPIRES_MINUTES }}
+          APP_CONFIG__JWT__REFRESH_TOKEN_EXPIRES_DAYS=${{ secrets.APP_CONFIG__JWT__REFRESH_TOKEN_EXPIRES_DAYS }}
+          APP_CONFIG__JWT__ALGORITHM=${{ secrets.APP_CONFIG__JWT__ALGORITHM }}
+          APP_CONFIG__ADMIN__USERNAME=${{ secrets.APP_CONFIG__ADMIN__USERNAME }}
+          APP_CONFIG__ADMIN__PASSWORD=${{ secrets.APP_CONFIG__ADMIN__PASSWORD }}
+          APP_CONFIG__ADMIN__SECRET_KEY=${{ secrets.APP_CONFIG__ADMIN__SECRET_KEY }}
+          APP_CONFIG__FILE_URL__HTTP=${{ secrets.APP_CONFIG__FILE_URL__HTTP }}
+          APP_CONFIG__FILE_URL__UPLOAD_DIR=${{ secrets.APP_CONFIG__FILE_URL__UPLOAD_DIR }}
+          APP_CONFIG__HEMIS__LOGIN_URL=${{ secrets.APP_CONFIG__HEMIS__LOGIN_URL }}
+          APP_CONFIG__HEMIS__ME_URL=${{ secrets.APP_CONFIG__HEMIS__ME_URL }}
+          APP_CONFIG__REDIS__HOST=${{ secrets.APP_CONFIG__REDIS__HOST }}
+          APP_CONFIG__REDIS__PORT=${{ secrets.APP_CONFIG__REDIS__PORT }}
+          APP_CONFIG__REDIS__PREFIX=${{ secrets.APP_CONFIG__REDIS__PREFIX }}
+          POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+          POSTGRES_HOST=localhost
+          POSTGRES_PORT=5436
+          EOF
+
+      - name: Install uv and sync dependencies
+        working-directory: backend
+        run: |
+          pip install --upgrade pip uv
+          uv sync
+
+      - name: Lint with ruff
+        working-directory: backend
+        run: uv run ruff check .
+
+      - name: Run pytest
+        working-directory: backend
+        env:
+          APP_CONFIG__DATABASE__TEST_URL: ${{ secrets.APP_CONFIG__DATABASE__TEST_URL }}
+          APP_CONFIG__REDIS__HOST: localhost
+          APP_CONFIG__REDIS__PORT: 6379
+        run: |
+          source .venv/bin/activate
+          pytest -v
+
+  # ──────────────────────────────────────────
+  # JOB 2: Frontend Build Check
+  # ──────────────────────────────────────────
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
