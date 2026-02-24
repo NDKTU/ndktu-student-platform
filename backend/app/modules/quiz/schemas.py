@@ -27,6 +27,7 @@ class QuizCreateResponse(BaseModel):
     duration: int
     pin: str
     is_active: bool
+    attempt: int = 1
     user_id: Optional[int]
     group_id: Optional[int]
     subject_id: Optional[int]

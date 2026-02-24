@@ -99,7 +99,7 @@ async def test_user_answers_flow(auth_client, async_db):
     
     # Filter for our specific answer in case other tests run
     found = False
-    for item in api_data:
+    for item in api_data["answers"]:
         if item["quiz_id"] == quiz.id and item["question_id"] == question_dto["id"]:
             assert item["answer"] == "4"
             assert item["is_correct"] == True

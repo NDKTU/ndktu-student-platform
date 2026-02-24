@@ -46,8 +46,10 @@ class RoleRepository:
 
         try:
             await session.commit()
-            await session.refresh(new_role)
-            # Re-fetch with permissions if needed, or it might just be empty for new role.
+            # Re-fetch with permissions loaded to satisfy response schema
+            stmt_reload = select(Role).options(selectinload(Role.permissions)).where(Role.id == new_role.id)
+            result_reload = await session.execute(stmt_reload)
+            new_role = result_reload.scalar_one()
         except Exception:
             await session.rollback()
             raise HTTPException(
