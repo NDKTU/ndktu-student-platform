@@ -197,6 +197,9 @@ jobs:
           POSTGRES_PORT=5432
           EOF
 
+      - name: Stop existing containers
+        run: docker compose down --remove-orphans
+
       - name: Pull & rebuild containers
         run: docker compose up -d --build
 
