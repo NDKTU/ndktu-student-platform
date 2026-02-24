@@ -68,20 +68,55 @@ docker exec -i "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -c \
 
 echo "🏷️  Stamping database with current migration head..."
 
-# 1. Update the path to point to 'backend/app' where alembic.ini is located
-ALEMBIC_DIR="$(dirname "$SCRIPT_DIR")/backend/app"
+BACKEND_DIR="$(dirname "$SCRIPT_DIR")/backend"
+ALEMBIC_DIR="$BACKEND_DIR/app"
+VENV_DIR="$BACKEND_DIR/.venv"
+ENV_FILE="$BACKEND_DIR/.env"
 
+# ─── Read DATABASE_URL from .env and rewrite for localhost access ────────────
+# Docker internal URL uses 'database:5432'; from the host we need 'localhost:5436'
+RAW_URL=$(grep -E '^APP_CONFIG__DATABASE__URL=' "$ENV_FILE" | head -n1 | cut -d'=' -f2-)
+if [ -z "$RAW_URL" ]; then
+    echo "❌ Could not read APP_CONFIG__DATABASE__URL from $ENV_FILE"
+    exit 1
+fi
+# Replace docker service host (database:5432) → localhost:5436
+LOCAL_URL=$(echo "$RAW_URL" | sed 's|@[^/]*:[0-9]\+/|@localhost:5436/|')
+echo "🔗 Using URL: $LOCAL_URL"
+
+# ─── Ensure .venv exists ─────────────────────────────────────────────────────
+if [ ! -d "$VENV_DIR" ]; then
+    echo "� No .venv found — creating virtual environment..."
+    cd "$BACKEND_DIR"
+    if command -v uv &>/dev/null; then
+        uv venv "$VENV_DIR"
+        uv sync --python "$VENV_DIR/bin/python"
+    else
+        python3 -m venv "$VENV_DIR"
+        "$VENV_DIR/bin/pip" install --quiet -r "$BACKEND_DIR/requirements.txt" 2>/dev/null \
+            || "$VENV_DIR/bin/pip" install --quiet -e "$BACKEND_DIR" 2>/dev/null \
+            || echo "⚠️  Could not auto-install deps — run pip install manually if stamp fails"
+    fi
+    echo "✅ .venv ready"
+else
+    echo "✅ .venv found at $VENV_DIR"
+fi
+
+ALEMBIC_BIN="$VENV_DIR/bin/alembic"
+if [ ! -f "$ALEMBIC_BIN" ]; then
+    echo "❌ alembic not found in .venv — install it first:"
+    echo "   cd $BACKEND_DIR && uv sync   OR   pip install alembic"
+    exit 1
+fi
+
+# ─── Run alembic stamp head ───────────────────────────────────────────────────
 if [ -d "$ALEMBIC_DIR" ]; then
     echo "📂 Changing directory to: $ALEMBIC_DIR"
     cd "$ALEMBIC_DIR"
-    
-    # 2. OVERRIDE the database URL to use localhost just for this command
-    #    (Keep your .env file as 'database:5432' for Docker)
-    export APP_CONFIG__DATABASE__URL="postgresql+asyncpg://bekzod:admin123@localhost:5436/basic_database"
 
-    # 3. Run stamp
-    alembic stamp head
-    
+    export APP_CONFIG__DATABASE__URL="$LOCAL_URL"
+    "$ALEMBIC_BIN" stamp head
+
     echo "✅ Stamp complete!"
 else
     echo "❌ Could not find alembic directory at $ALEMBIC_DIR"
