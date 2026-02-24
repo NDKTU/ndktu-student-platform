@@ -14,17 +14,18 @@ jobs:
     name: Backend Tests
     runs-on: ubuntu-latest
 
+    # Static test-only credentials – secrets context is not available inside services:
     services:
       postgres:
         image: postgres:17
         env:
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_USER: ci_user
+          POSTGRES_PASSWORD: ci_password
           POSTGRES_DB: test_db
         ports:
           - 5436:5432
         options: >-
-          --health-cmd "pg_isready -U ${{ secrets.POSTGRES_USER }} -d test_db"
+          --health-cmd "pg_isready -U ci_user -d test_db"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -64,33 +65,33 @@ jobs:
         working-directory: backend
         run: |
           cat > .env <<EOF
-          APP_CONFIG__DATABASE__URL=${{ secrets.APP_CONFIG__DATABASE__URL }}
-          APP_CONFIG__DATABASE__TEST_URL=${{ secrets.APP_CONFIG__DATABASE__TEST_URL }}
-          APP_CONFIG__DATABASE__ECHO=${{ secrets.APP_CONFIG__DATABASE__ECHO }}
-          APP_CONFIG__DATABASE__ECHO_POOL=${{ secrets.APP_CONFIG__DATABASE__ECHO_POOL }}
-          APP_CONFIG__DATABASE__POOL_SIZE=${{ secrets.APP_CONFIG__DATABASE__POOL_SIZE }}
-          APP_CONFIG__DATABASE__MAX_OVERFLOW=${{ secrets.APP_CONFIG__DATABASE__MAX_OVERFLOW }}
-          APP_CONFIG__SERVER__APP_PATH=${{ secrets.APP_CONFIG__SERVER__APP_PATH }}
-          APP_CONFIG__SERVER__HOST=${{ secrets.APP_CONFIG__SERVER__HOST }}
-          APP_CONFIG__SERVER__PORT=${{ secrets.APP_CONFIG__SERVER__PORT }}
+          APP_CONFIG__DATABASE__URL=postgresql+asyncpg://ci_user:ci_password@localhost:5436/test_db
+          APP_CONFIG__DATABASE__TEST_URL=postgresql+asyncpg://ci_user:ci_password@localhost:5436/test_db
+          APP_CONFIG__DATABASE__ECHO=False
+          APP_CONFIG__DATABASE__ECHO_POOL=False
+          APP_CONFIG__DATABASE__POOL_SIZE=10
+          APP_CONFIG__DATABASE__MAX_OVERFLOW=5
+          APP_CONFIG__SERVER__APP_PATH=main:app
+          APP_CONFIG__SERVER__HOST=0.0.0.0
+          APP_CONFIG__SERVER__PORT=8000
           APP_CONFIG__JWT__ACCESS_TOKEN_SECRET=${{ secrets.APP_CONFIG__JWT__ACCESS_TOKEN_SECRET }}
           APP_CONFIG__JWT__REFRESH_TOKEN_SECRET=${{ secrets.APP_CONFIG__JWT__REFRESH_TOKEN_SECRET }}
-          APP_CONFIG__JWT__ACCESS_TOKEN_EXPIRES_MINUTES=${{ secrets.APP_CONFIG__JWT__ACCESS_TOKEN_EXPIRES_MINUTES }}
-          APP_CONFIG__JWT__REFRESH_TOKEN_EXPIRES_DAYS=${{ secrets.APP_CONFIG__JWT__REFRESH_TOKEN_EXPIRES_DAYS }}
-          APP_CONFIG__JWT__ALGORITHM=${{ secrets.APP_CONFIG__JWT__ALGORITHM }}
+          APP_CONFIG__JWT__ACCESS_TOKEN_EXPIRES_MINUTES=30
+          APP_CONFIG__JWT__REFRESH_TOKEN_EXPIRES_DAYS=7
+          APP_CONFIG__JWT__ALGORITHM=HS256
           APP_CONFIG__ADMIN__USERNAME=${{ secrets.APP_CONFIG__ADMIN__USERNAME }}
           APP_CONFIG__ADMIN__PASSWORD=${{ secrets.APP_CONFIG__ADMIN__PASSWORD }}
           APP_CONFIG__ADMIN__SECRET_KEY=${{ secrets.APP_CONFIG__ADMIN__SECRET_KEY }}
           APP_CONFIG__FILE_URL__HTTP=${{ secrets.APP_CONFIG__FILE_URL__HTTP }}
-          APP_CONFIG__FILE_URL__UPLOAD_DIR=${{ secrets.APP_CONFIG__FILE_URL__UPLOAD_DIR }}
+          APP_CONFIG__FILE_URL__UPLOAD_DIR=uploads/questions
           APP_CONFIG__HEMIS__LOGIN_URL=${{ secrets.APP_CONFIG__HEMIS__LOGIN_URL }}
           APP_CONFIG__HEMIS__ME_URL=${{ secrets.APP_CONFIG__HEMIS__ME_URL }}
-          APP_CONFIG__REDIS__HOST=${{ secrets.APP_CONFIG__REDIS__HOST }}
-          APP_CONFIG__REDIS__PORT=${{ secrets.APP_CONFIG__REDIS__PORT }}
-          APP_CONFIG__REDIS__PREFIX=${{ secrets.APP_CONFIG__REDIS__PREFIX }}
-          POSTGRES_USER=${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
-          POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+          APP_CONFIG__REDIS__HOST=localhost
+          APP_CONFIG__REDIS__PORT=6379
+          APP_CONFIG__REDIS__PREFIX=fastapi-cache
+          POSTGRES_USER=ci_user
+          POSTGRES_PASSWORD=ci_password
+          POSTGRES_DB=test_db
           POSTGRES_HOST=localhost
           POSTGRES_PORT=5436
           EOF
@@ -108,7 +109,7 @@ jobs:
       - name: Run pytest
         working-directory: backend
         env:
-          APP_CONFIG__DATABASE__TEST_URL: ${{ secrets.APP_CONFIG__DATABASE__TEST_URL }}
+          APP_CONFIG__DATABASE__TEST_URL: postgresql+asyncpg://ci_user:ci_password@localhost:5436/test_db
           APP_CONFIG__REDIS__HOST: localhost
           APP_CONFIG__REDIS__PORT: 6379
         run: |
