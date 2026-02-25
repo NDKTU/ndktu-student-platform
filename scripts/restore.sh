@@ -8,9 +8,21 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+ENV_FILE="$PROJECT_DIR/backend/.env"
 DB_CONTAINER="database"
-DB_NAME="basic_database"
-DB_USER="bekzod"
+
+if [ ! -f "$ENV_FILE" ]; then
+    echo "❌ .env file not found at $ENV_FILE"
+    exit 1
+fi
+
+DB_NAME=$(grep -E '^POSTGRES_DB=' "$ENV_FILE" | head -n1 | cut -d'=' -f2-)
+DB_USER=$(grep -E '^POSTGRES_USER=' "$ENV_FILE" | head -n1 | cut -d'=' -f2-)
+
+if [ -z "$DB_NAME" ] || [ -z "$DB_USER" ]; then
+    echo "❌ Could not read POSTGRES_DB or POSTGRES_USER from $ENV_FILE"
+    exit 1
+fi
 
 # ─── Validate input ─────────────────────────────────────
 if [ $# -eq 0 ]; then
@@ -68,57 +80,16 @@ docker exec -i "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -c \
 
 echo "🏷️  Stamping database with current migration head..."
 
-BACKEND_DIR="$(dirname "$SCRIPT_DIR")/backend"
-ALEMBIC_DIR="$BACKEND_DIR/app"
-VENV_DIR="$BACKEND_DIR/.venv"
-ENV_FILE="$BACKEND_DIR/.env"
+# ─── Find backend container ────────────────────────────────────────────────
 
-# ─── Read DATABASE_URL from .env and rewrite for localhost access ────────────
-# Docker internal URL uses 'database:5432'; from the host we need 'localhost:5436'
-RAW_URL=$(grep -E '^APP_CONFIG__DATABASE__URL=' "$ENV_FILE" | head -n1 | cut -d'=' -f2-)
-if [ -z "$RAW_URL" ]; then
-    echo "❌ Could not read APP_CONFIG__DATABASE__URL from $ENV_FILE"
-    exit 1
-fi
-# Replace docker service host (database:5432) → localhost:5436
-LOCAL_URL=$(echo "$RAW_URL" | sed 's|@[^/]*:[0-9]\+/|@localhost:5436/|')
-echo "🔗 Using URL: $LOCAL_URL"
+BACKEND_CONTAINER=$(docker ps -a | grep "backend" | awk '{print $1}' | head -n1)
 
-# ─── Ensure .venv exists ─────────────────────────────────────────────────────
-if [ ! -d "$VENV_DIR" ]; then
-    echo "� No .venv found — creating virtual environment..."
-    cd "$BACKEND_DIR"
-    if command -v uv &>/dev/null; then
-        uv venv "$VENV_DIR"
-        uv sync --python "$VENV_DIR/bin/python"
-    else
-        python3 -m venv "$VENV_DIR"
-        "$VENV_DIR/bin/pip" install --quiet -r "$BACKEND_DIR/requirements.txt" 2>/dev/null \
-            || "$VENV_DIR/bin/pip" install --quiet -e "$BACKEND_DIR" 2>/dev/null \
-            || echo "⚠️  Could not auto-install deps — run pip install manually if stamp fails"
-    fi
-    echo "✅ .venv ready"
-else
-    echo "✅ .venv found at $VENV_DIR"
-fi
-
-ALEMBIC_BIN="$VENV_DIR/bin/alembic"
-if [ ! -f "$ALEMBIC_BIN" ]; then
-    echo "❌ alembic not found in .venv — install it first:"
-    echo "   cd $BACKEND_DIR && uv sync   OR   pip install alembic"
+if [ -z "$BACKEND_CONTAINER" ]; then
+    echo "❌ Could not find a running backend container."
     exit 1
 fi
 
-# ─── Run alembic stamp head ───────────────────────────────────────────────────
-if [ -d "$ALEMBIC_DIR" ]; then
-    echo "📂 Changing directory to: $ALEMBIC_DIR"
-    cd "$ALEMBIC_DIR"
+echo "🐳 Running alembic stamp head in container $BACKEND_CONTAINER..."
+docker exec -i "$BACKEND_CONTAINER" sh -c "cd /face/app && uv run alembic stamp head"
 
-    export APP_CONFIG__DATABASE__URL="$LOCAL_URL"
-    "$ALEMBIC_BIN" stamp head
-
-    echo "✅ Stamp complete!"
-else
-    echo "❌ Could not find alembic directory at $ALEMBIC_DIR"
-    exit 1
-fi
+echo "✅ Stamp complete!"

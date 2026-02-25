@@ -10,10 +10,38 @@ set -euo pipefail
 # ─── Config ──────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-BACKUP_DIR="$PROJECT_DIR/backups"
+CONFIG_FILE="$PROJECT_DIR/.backup_config"
+
+CUSTOM_PATH="${FILE:-${1:-}}"
+if [ -n "$CUSTOM_PATH" ]; then
+    if [[ "$CUSTOM_PATH" != /* ]]; then
+        CUSTOM_PATH="$PWD/$CUSTOM_PATH"
+    fi
+    BACKUP_DIR_BASE="$CUSTOM_PATH"
+    echo "BACKUP_DIR_BASE=\"$BACKUP_DIR_BASE\"" > "$CONFIG_FILE"
+    echo "💾 Saved custom backup directory: $BACKUP_DIR_BASE"
+elif [ -f "$CONFIG_FILE" ]; then
+    source "$CONFIG_FILE"
+fi
+
+BACKUP_DIR_BASE="${BACKUP_DIR_BASE:-$PROJECT_DIR/backups}"
+BACKUP_DIR="$BACKUP_DIR_BASE"
+ENV_FILE="$PROJECT_DIR/backend/.env"
 DB_CONTAINER="database"
-DB_NAME="basic_database"
-DB_USER="bekzod"
+
+if [ ! -f "$ENV_FILE" ]; then
+    echo "❌ .env file not found at $ENV_FILE"
+    exit 1
+fi
+
+DB_NAME=$(grep -E '^POSTGRES_DB=' "$ENV_FILE" | head -n1 | cut -d'=' -f2-)
+DB_USER=$(grep -E '^POSTGRES_USER=' "$ENV_FILE" | head -n1 | cut -d'=' -f2-)
+
+if [ -z "$DB_NAME" ] || [ -z "$DB_USER" ]; then
+    echo "❌ Could not read POSTGRES_DB or POSTGRES_USER from $ENV_FILE"
+    exit 1
+fi
+
 MAX_BACKUPS=10  # Keep last N backups
 
 # ─── Setup ───────────────────────────────────────────────

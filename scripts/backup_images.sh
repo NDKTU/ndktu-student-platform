@@ -9,7 +9,22 @@ set -euo pipefail
 # ─── Config ──────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-BACKUP_DIR="$PROJECT_DIR/backups/images"
+CONFIG_FILE="$PROJECT_DIR/.backup_config"
+
+CUSTOM_PATH="${FILE:-${1:-}}"
+if [ -n "$CUSTOM_PATH" ]; then
+    if [[ "$CUSTOM_PATH" != /* ]]; then
+        CUSTOM_PATH="$PWD/$CUSTOM_PATH"
+    fi
+    BACKUP_DIR_BASE="$CUSTOM_PATH"
+    echo "BACKUP_DIR_BASE=\"$BACKUP_DIR_BASE\"" > "$CONFIG_FILE"
+    echo "💾 Saved custom backup directory: $BACKUP_DIR_BASE"
+elif [ -f "$CONFIG_FILE" ]; then
+    source "$CONFIG_FILE"
+fi
+
+BACKUP_DIR_BASE="${BACKUP_DIR_BASE:-$PROJECT_DIR/backups}"
+BACKUP_DIR="$BACKUP_DIR_BASE/images"
 UPLOADS_DIR="$PROJECT_DIR/backend/uploads"
 MAX_BACKUPS=10
 
