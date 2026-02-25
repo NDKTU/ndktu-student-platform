@@ -62,6 +62,8 @@ def main():
         host=settings.server.host,
         port=settings.server.port,
         reload=settings.server.reload,
+        proxy_headers=True,
+        forwarded_allow_ips="*",
     )
 
 
