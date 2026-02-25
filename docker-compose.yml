@@ -116,3 +116,5 @@ volumes:
   postgres_data_quiz:
   redis_data:
   pgadmin_data:
+  backend_logs:
+  backend_uploads:
