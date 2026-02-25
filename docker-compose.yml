@@ -34,8 +34,8 @@ services:
       timeout: 10s
       retries: 3
     volumes:
-      - ./backend/logs:/face/logs
-      - ./backend/uploads:/face/uploads
+      - backend_logs:/face/logs
+      - backend_uploads:/face/uploads
       - ~/.logfire:/root/.logfire:ro
     networks:
       - app_network
