@@ -44,6 +44,17 @@ app.add_middleware(
 # --- Register Logging Middleware ---
 app.add_middleware(LoggingMiddleware)
 
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+
+class ForceHTTPSMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if request.headers.get("x-forwarded-proto") == "https":
+            request.scope["scheme"] = "https"
+        return await call_next(request)
+
+app.add_middleware(ForceHTTPSMiddleware)
+
 app.include_router(router)
 admin = Admin(
     app, engine=db_helper.engine, authentication_backend=authentication_backend
