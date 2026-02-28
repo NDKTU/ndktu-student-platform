@@ -29,8 +29,8 @@ router = APIRouter(
     prefix="/user",
 )
 
-# dependencies=[Depends(RateLimiter(times=5, seconds=60))]
-@router.post("/login", response_model=UserLoginResponse)
+
+@router.post("/login", response_model=UserLoginResponse, dependencies=[Depends(RateLimiter(times=5, seconds=60))])
 async def login(
     data: UserLoginRequest, session: AsyncSession = Depends(db_helper.session_getter)
 ):
