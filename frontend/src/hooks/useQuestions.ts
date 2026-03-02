@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { questionService, type QuestionCreateRequest } from '@/services/questionService';
 
-export const useQuestions = (page = 1, limit = 10, text?: string) => {
+export const useQuestions = (page = 1, limit = 10, text?: string, subject_id?: number) => {
     return useQuery({
-        queryKey: ['questions', page, limit, text],
-        queryFn: () => questionService.getQuestions(page, limit, text),
+        queryKey: ['questions', page, limit, text, subject_id],
+        queryFn: () => questionService.getQuestions(page, limit, text, subject_id),
         placeholderData: (previousData) => previousData,
     });
 };

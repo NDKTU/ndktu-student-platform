@@ -12,19 +12,87 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/Table';
-import { Card, CardContent } from '@/components/ui/Card';
-import { Plus, Pencil, Trash2, Loader2, FileQuestion, Upload, FileUp, Search } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
+import { Plus, Pencil, Trash2, Loader2, FileQuestion, Upload, FileUp, Search, BookOpen, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useQuestions, useDeleteQuestion, useUploadQuestions } from '@/hooks/useQuestions';
-import { useSubjects } from '@/hooks/useSubjects';
+import { useSubjects, useTeacherAssignedSubjects } from '@/hooks/useSubjects';
 import { Input } from '@/components/ui/Input';
+import { useAuth } from '@/context/AuthContext';
 
-const QuestionsPage = () => {
+// ─── Teacher Subject Picker ──────────────────────────────────────────────────
+
+const TeacherSubjectPicker = ({ onSelect }: { onSelect: (subject: Subject) => void }) => {
+    const { user } = useAuth();
+    const userId = user?.id;
+    const { data, isLoading } = useTeacherAssignedSubjects(userId);
+    const subjects = data?.subject_teachers.map((st) => st.subject) || [];
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center p-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
+    if (subjects.length === 0) {
+        return (
+            <Card className="border-dashed">
+                <CardContent className="flex flex-col items-center justify-center p-12 text-center">
+                    <div className="rounded-full bg-muted p-4 mb-4">
+                        <BookOpen className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-semibold">Fanlar biriktirilmagan</h3>
+                    <p className="text-muted-foreground mt-1 max-w-sm">
+                        Hozircha sizga hech qanday fan biriktirilmagan. Admin bilan bog'laning.
+                    </p>
+                </CardContent>
+            </Card>
+        );
+    }
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {subjects.map((subject) => (
+                <Card
+                    key={subject.id}
+                    className="hover:shadow-md transition-shadow cursor-pointer group"
+                    onClick={() => onSelect(subject)}
+                >
+                    <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center justify-between">
+                            <span>{subject.name}</span>
+                            <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </CardTitle>
+                        <CardDescription>Savollarni ko'rish uchun bosing</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <BookOpen className="h-4 w-4" />
+                            <span>Savollar bankini ko'rish</span>
+                        </div>
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+    );
+};
+
+// ─── Questions Table (shared by admin and teacher) ───────────────────────────
+
+interface QuestionsTableProps {
+    subjectId?: number;
+    subjects: Subject[];
+    onBack?: () => void;
+    selectedSubjectName?: string;
+}
+
+const QuestionsTable = ({ subjectId, subjects, onBack, selectedSubjectName }: QuestionsTableProps) => {
     const navigate = useNavigate();
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 10;
-
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [questionToDelete, setQuestionToDelete] = useState<Question | null>(null);
@@ -41,25 +109,33 @@ const QuestionsPage = () => {
         return () => clearTimeout(timer);
     }, [searchTerm]);
 
-    const { data: questionsData, isLoading: isQuestionsLoading } = useQuestions(currentPage, pageSize, debouncedSearch);
-    const { data: subjectsData } = useSubjects(1, 100);
+    // Reset page when switching subject
+    useEffect(() => {
+        setCurrentPage(1);
+        setSearchTerm('');
+        setDebouncedSearch('');
+    }, [subjectId]);
+
+    const { data: questionsData, isLoading: isQuestionsLoading } = useQuestions(
+        currentPage,
+        pageSize,
+        debouncedSearch,
+        subjectId,
+    );
     const deleteQuestionMutation = useDeleteQuestion();
 
     const questions = questionsData?.questions || [];
     const totalPages = questionsData ? Math.ceil(questionsData.total / pageSize) : 1;
-    const subjects = subjectsData?.subjects || [];
 
-    const handleCreateQuestion = () => {
-        navigate('/questions/create');
-    };
+    const handleCreateQuestion = () => navigate('/questions/create');
 
     const handleEditQuestion = (question: Question, e: React.MouseEvent) => {
-        e.stopPropagation(); // Prevent row click
+        e.stopPropagation();
         navigate(`/questions/${question.id}/edit`);
     };
 
     const handleDeleteClick = (question: Question, e: React.MouseEvent) => {
-        e.stopPropagation(); // Prevent row click
+        e.stopPropagation();
         setQuestionToDelete(question);
         setIsDeleteModalOpen(true);
     };
@@ -79,26 +155,31 @@ const QuestionsPage = () => {
         });
     };
 
-    const handleSuccess = () => {
-        setIsUploadModalOpen(false);
-    };
-
     const getSubjectName = (id?: number) => subjects.find(s => s.id === id)?.name || '-';
 
-    // Helper to strip HTML tags for preview
     const stripHtml = (html: string) => {
         const tmp = document.createElement('DIV');
         tmp.innerHTML = html;
         return tmp.textContent || tmp.innerText || '';
-    }
+    };
 
     return (
         <div className="space-y-6">
             {/* Page header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 className="text-xl font-semibold tracking-tight">Savollar</h1>
-                    <p className="mt-0.5 text-sm text-muted-foreground">Savollar bankini boshqarish</p>
+                <div className="flex items-center gap-3">
+                    {onBack && (
+                        <Button variant="ghost" size="sm" onClick={onBack} className="flex items-center gap-1">
+                            <ArrowLeft className="h-4 w-4" />
+                            Orqaga
+                        </Button>
+                    )}
+                    <div>
+                        <h1 className="text-xl font-semibold tracking-tight">
+                            {selectedSubjectName ? `Savollar — ${selectedSubjectName}` : 'Savollar'}
+                        </h1>
+                        <p className="mt-0.5 text-sm text-muted-foreground">Savollar bankini boshqarish</p>
+                    </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="relative">
@@ -130,16 +211,16 @@ const QuestionsPage = () => {
                     ) : questions.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                             <FileQuestion className="h-12 w-12 mb-4 opacity-20" />
-                            <p>No questions found. Add one manually or import from Excel.</p>
+                            <p>Savollar topilmadi. Qo'lda qo'shing yoki Excel dan import qiling.</p>
                         </div>
                     ) : (
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="w-[50%]">Question</TableHead>
-                                    <TableHead>Subject</TableHead>
-                                    <TableHead>User</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead className="w-[50%]">Savol</TableHead>
+                                    <TableHead>Fan</TableHead>
+                                    <TableHead>Foydalanuvchi</TableHead>
+                                    <TableHead className="text-right">Amallar</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -152,10 +233,7 @@ const QuestionsPage = () => {
                                             onClick={() => handleViewQuestion(question)}
                                         >
                                             <TableCell className="font-medium">
-                                                <div
-                                                    className="break-words max-w-md"
-                                                    title={plainText}
-                                                >
+                                                <div className="break-words max-w-md" title={plainText}>
                                                     {plainText.length > 100 ? `${plainText.substring(0, 100)}...` : plainText}
                                                 </div>
                                             </TableCell>
@@ -181,7 +259,7 @@ const QuestionsPage = () => {
                                                 </div>
                                             </TableCell>
                                         </TableRow>
-                                    )
+                                    );
                                 })}
                             </TableBody>
                         </Table>
@@ -199,8 +277,9 @@ const QuestionsPage = () => {
             <UploadModal
                 isOpen={isUploadModalOpen}
                 onClose={() => setIsUploadModalOpen(false)}
-                onSuccess={handleSuccess}
+                onSuccess={() => setIsUploadModalOpen(false)}
                 subjects={subjects}
+                defaultSubjectId={subjectId}
             />
 
             <QuestionDetailModal
@@ -214,14 +293,59 @@ const QuestionsPage = () => {
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={handleConfirmDelete}
-                title="Delete Question"
-                description="Are you sure you want to delete this question? This action cannot be undone."
-                confirmText="Delete"
-                cancelText="Cancel"
+                title="Savolni o'chirish"
+                description="Haqiqatan ham bu savolni o'chirmoqchimisiz? Bu amalni qaytarib bo'lmaydi."
+                confirmText="O'chirish"
+                cancelText="Bekor qilish"
             />
         </div>
     );
 };
+
+// ─── Main Page ───────────────────────────────────────────────────────────────
+
+const QuestionsPage = () => {
+    const { user } = useAuth();
+    const isTeacher = user?.roles?.some(r => r.name.toLowerCase() === 'teacher');
+
+    const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+
+    // All subjects — needed for admin flat view and upload modal
+    const { data: subjectsData } = useSubjects(1, 100);
+    const subjects = subjectsData?.subjects || [];
+
+    if (isTeacher) {
+        if (!selectedSubject) {
+            // Step 1: show subject picker
+            return (
+                <div className="space-y-6">
+                    <div>
+                        <h1 className="text-xl font-semibold tracking-tight">Savollar</h1>
+                        <p className="mt-0.5 text-sm text-muted-foreground">
+                            Fan tanlang — o'sha fanga tegishli savollarni ko'rasiz
+                        </p>
+                    </div>
+                    <TeacherSubjectPicker onSelect={setSelectedSubject} />
+                </div>
+            );
+        }
+
+        // Step 2: show questions filtered by selected subject
+        return (
+            <QuestionsTable
+                subjectId={selectedSubject.id}
+                subjects={subjects}
+                selectedSubjectName={selectedSubject.name}
+                onBack={() => setSelectedSubject(null)}
+            />
+        );
+    }
+
+    // Admin: existing flat list
+    return <QuestionsTable subjects={subjects} />;
+};
+
+// ─── Modals ───────────────────────────────────────────────────────────────────
 
 const QuestionDetailModal = ({
     isOpen,
@@ -237,14 +361,10 @@ const QuestionDetailModal = ({
     if (!question) return null;
 
     return (
-        <Modal
-            isOpen={isOpen}
-            onClose={onClose}
-            title="Question Details"
-        >
+        <Modal isOpen={isOpen} onClose={onClose} title="Savol tafsilotlari">
             <div className="space-y-6">
                 <div className="space-y-2">
-                    <h3 className="text-sm font-medium text-muted-foreground">Question Body</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">Savol matni</h3>
                     <div
                         className="rounded-lg border bg-muted/50 p-4 text-sm"
                         dangerouslySetInnerHTML={{ __html: question.text }}
@@ -252,7 +372,7 @@ const QuestionDetailModal = ({
                 </div>
 
                 <div className="space-y-3">
-                    <h3 className="text-sm font-medium text-muted-foreground">Options</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">Variantlar</h3>
                     <div className="grid gap-3">
                         {[
                             { label: 'A', value: question.option_a },
@@ -275,12 +395,12 @@ const QuestionDetailModal = ({
 
                 <div className="pt-2 border-t mt-4">
                     <p className="text-sm text-muted-foreground">
-                        Subject: <span className="font-medium text-foreground">{getSubjectName(question.subject_id)}</span>
+                        Fan: <span className="font-medium text-foreground">{getSubjectName(question.subject_id)}</span>
                     </p>
                 </div>
 
                 <div className="flex justify-end pt-2">
-                    <Button onClick={onClose}>Close</Button>
+                    <Button onClick={onClose}>Yopish</Button>
                 </div>
             </div>
         </Modal>
@@ -292,15 +412,22 @@ const UploadModal = ({
     onClose,
     onSuccess,
     subjects,
+    defaultSubjectId,
 }: {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
     subjects: Subject[];
+    defaultSubjectId?: number;
 }) => {
     const [file, setFile] = useState<File | null>(null);
-    const [subjectId, setSubjectId] = useState<string>('');
+    const [subjectId, setSubjectId] = useState<string>(defaultSubjectId ? String(defaultSubjectId) : '');
     const uploadMutation = useUploadQuestions();
+
+    // Sync defaultSubjectId when it changes (e.g., navigating between subjects)
+    useEffect(() => {
+        setSubjectId(defaultSubjectId ? String(defaultSubjectId) : '');
+    }, [defaultSubjectId]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -311,31 +438,22 @@ const UploadModal = ({
     const handleUpload = () => {
         if (!file || !subjectId) return;
         uploadMutation.mutate({ file, subject_id: parseInt(subjectId) }, {
-            onSuccess: () => {
-                onSuccess();
-            },
-            onError: (error) => {
-                console.error('Failed to upload file', error);
-                alert('Failed to upload file');
-            }
+            onSuccess: () => onSuccess(),
+            onError: () => alert("Faylni yuklashda xatolik yuz berdi"),
         });
     };
 
     return (
-        <Modal
-            isOpen={isOpen}
-            onClose={onClose}
-            title="Import Questions from Excel"
-        >
+        <Modal isOpen={isOpen} onClose={onClose} title="Excel dan savollar import qilish">
             <div className="space-y-6">
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">Subject</label>
+                    <label className="text-sm font-medium">Fan</label>
                     <select
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         value={subjectId}
                         onChange={(e) => setSubjectId(e.target.value)}
                     >
-                        <option value="">Select Subject</option>
+                        <option value="">Fan tanlang</option>
                         {subjects.map((s) => (
                             <option key={s.id} value={s.id}>{s.name}</option>
                         ))}
@@ -344,7 +462,7 @@ const UploadModal = ({
                 <div className="flex flex-col items-center justify-center border-2 border-dashed border-muted-foreground/25 rounded-lg p-10">
                     <FileUp className="h-10 w-10 text-muted-foreground mb-4" />
                     <p className="text-sm text-muted-foreground mb-2">
-                        Select an Excel file (.xlsx) to upload
+                        Excel fayl (.xlsx) tanlang
                     </p>
                     <input
                         type="file"
@@ -360,13 +478,13 @@ const UploadModal = ({
                 </div>
                 {file && (
                     <div className="text-sm">
-                        Selected file: <span className="font-medium">{file.name}</span>
+                        Tanlangan fayl: <span className="font-medium">{file.name}</span>
                     </div>
                 )}
                 <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={onClose}>Cancel</Button>
+                    <Button variant="outline" onClick={onClose}>Bekor qilish</Button>
                     <Button onClick={handleUpload} isLoading={uploadMutation.isPending} disabled={!file || !subjectId}>
-                        Upload
+                        Yuklash
                     </Button>
                 </div>
             </div>
