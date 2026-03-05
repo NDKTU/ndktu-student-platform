@@ -169,27 +169,24 @@ class QuestionRepository:
         contents = await file.read()
         df = pd.read_excel(io.BytesIO(contents))
         
-        # Expected columns: text, option_a, option_b, option_c, option_d, image (optional)
-        # Verify columns exist
-        required_columns = ["text", "option_a", "option_b", "option_c", "option_d"]
-        for col in required_columns:
-            if col not in df.columns:
-                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Missing column '{col}' in Excel file",
-                )
+        # Verify there are at least 5 columns
+        if len(df.columns) < 5:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Excel file must contain at least 5 columns (question, option A, option B, option C, option D)",
+            )
         
         questions = []
         for index, row in df.iterrows():
             # If subject_id is in row, use it, else use param
             # If image is in row, use it
             
-            # Using get via attribute access if valid python names, or dict access
-            text = str(row["text"])
-            opt_a = str(row["option_a"])
-            opt_b = str(row["option_b"])
-            opt_c = str(row["option_c"])
-            opt_d = str(row["option_d"])
+            # Using positional indices instead of column names
+            text = str(row.iloc[0]) if not pd.isna(row.iloc[0]) else ""
+            opt_a = str(row.iloc[1]) if not pd.isna(row.iloc[1]) else ""
+            opt_b = str(row.iloc[2]) if not pd.isna(row.iloc[2]) else ""
+            opt_c = str(row.iloc[3]) if not pd.isna(row.iloc[3]) else ""
+            opt_d = str(row.iloc[4]) if not pd.isna(row.iloc[4]) else ""
             
             q_subject_id = subject_id
             if "subject_id" in df.columns and not pd.isna(row["subject_id"]):
