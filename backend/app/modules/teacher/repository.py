@@ -191,6 +191,8 @@ class TeacherRepository:
         # 2. Delete existing
         for gt in user.group_teachers:
             await session.delete(gt)
+            
+        await session.flush()
         
         # 3. Fetch specific groups to validate
         if data.group_ids:
@@ -234,6 +236,8 @@ class TeacherRepository:
         # 2. Delete existing
         for st in teacher.subject_teachers:
             await session.delete(st)
+
+        await session.flush()
 
         # 3. Fetch subjects to validate
         if data.subject_ids:
