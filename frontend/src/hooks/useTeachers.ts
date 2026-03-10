@@ -98,22 +98,6 @@ export const useTeacherRankingOverall = () => {
     });
 };
 
-export const useTeacherRankingByFaculty = (facultyId?: number) => {
-    return useQuery({
-        queryKey: ['teacherRanking', 'faculty', facultyId],
-        queryFn: () => teacherService.getRankingByFaculty(facultyId!),
-        enabled: !!facultyId,
-    });
-};
-
-export const useTeacherRankingByKafedra = (kafedraId?: number) => {
-    return useQuery({
-        queryKey: ['teacherRanking', 'kafedra', kafedraId],
-        queryFn: () => teacherService.getRankingByKafedra(kafedraId!),
-        enabled: !!kafedraId,
-    });
-};
-
 export const useTeacherRankingByGroup = (groupId?: number) => {
     return useQuery({
         queryKey: ['teacherRanking', 'group', groupId],
@@ -122,3 +106,16 @@ export const useTeacherRankingByGroup = (groupId?: number) => {
     });
 };
 
+export const useFacultyRanking = () => {
+    return useQuery({
+        queryKey: ['facultyRanking'],
+        queryFn: () => teacherService.getFacultyRanking(),
+    });
+};
+
+export const useKafedraRanking = () => {
+    return useQuery({
+        queryKey: ['kafedraRanking'],
+        queryFn: () => teacherService.getKafedraRanking(),
+    });
+};

@@ -130,7 +130,7 @@ class TeacherAssignedGroupsResponse(BaseModel):
         return data
 
 
-# ── Ranking schemas ──────────────────────────────────────────────────────────
+# ── Teacher ranking schemas ───────────────────────────────────────────────────
 
 class TeacherRankItem(BaseModel):
     """A single teacher entry in a ranking list."""
@@ -145,21 +145,61 @@ class TeacherRankItem(BaseModel):
     group_id: Optional[int] = None
     group_name: Optional[str] = None
     student_count: int
-    total_grade: float
+    avg_grade: float         # plain AVG(grade) on 2–5 scale
+    weighted_rating: float   # Bayesian-adjusted rating, also 2–5
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# scope is limited to overall or group; faculty/kafedra have their own schemas
+TeacherRankingScope = Literal["overall", "group"]
+
+
+class TeacherRankingResponse(BaseModel):
+    scope: TeacherRankingScope
+    scope_id: Optional[int] = None
+    total: int
+    teachers: list[TeacherRankItem]
+
+
+# ── Faculty ranking schemas ───────────────────────────────────────────────────
+
+class FacultyRankItem(BaseModel):
+    """A single faculty entry in a faculty ranking list."""
+    rank: int
+    faculty_id: int
+    faculty_name: str
+    kafedra_count: int
+    student_count: int
     avg_grade: float
-    # Bayesian-weighted rating on the 2–5 scale
-    # Pulls low-sample teachers toward the global mean.
     weighted_rating: float
 
     model_config = ConfigDict(from_attributes=True)
 
 
-RankingScope = Literal["overall", "faculty", "kafedra", "group"]
-
-
-class TeacherRankingResponse(BaseModel):
-    scope: RankingScope
-    scope_id: Optional[int] = None   # faculty_id / kafedra_id / group_id
+class FacultyRankingResponse(BaseModel):
     total: int
-    teachers: list[TeacherRankItem]
+    faculties: list[FacultyRankItem]
+
+
+# ── Kafedra ranking schemas ───────────────────────────────────────────────────
+
+class KafedraRankItem(BaseModel):
+    """A single kafedra (chair) entry in a kafedra ranking list."""
+    rank: int
+    kafedra_id: int
+    kafedra_name: str
+    faculty_id: int
+    faculty_name: str
+    teacher_count: int
+    student_count: int
+    avg_grade: float
+    weighted_rating: float
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class KafedraRankingResponse(BaseModel):
+    total: int
+    kafedras: list[KafedraRankItem]
 

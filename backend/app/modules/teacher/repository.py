@@ -23,7 +23,11 @@ from .schemas import (
     TeacherSubjectAssignRequest,
     TeacherRankItem,
     TeacherRankingResponse,
-    RankingScope,
+    TeacherRankingScope,
+    FacultyRankItem,
+    FacultyRankingResponse,
+    KafedraRankItem,
+    KafedraRankingResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -307,38 +311,54 @@ class TeacherRepository:
         return teacher
 
     # ------------------------------------------------------------------
-    # Ranking  (Bayesian weighted, 2–5 grade scale)
+    # Bayesian helper
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _bayesian(entries: list[dict], C: float = 5.0) -> list[dict]:
+        """
+        Apply Bayesian weighted rating to a list of dicts that have
+        'avg_grade' and 'student_count' keys.  Adds 'weighted_rating'.
+
+        Formula: weighted_rating = (C×m + avg_grade×v) / (C + v)
+          m = global mean avg_grade across all entries
+          v = student_count for this entry
+          C = confidence threshold (default 5)
+        """
+        if not entries:
+            return entries
+        total_v = sum(e["student_count"] for e in entries)
+        if total_v == 0:
+            for e in entries:
+                e["weighted_rating"] = 0.0
+            return entries
+        # Global mean = weighted avg of avg_grades
+        m = sum(e["avg_grade"] * e["student_count"] for e in entries) / total_v
+        for e in entries:
+            v = e["student_count"]
+            e["weighted_rating"] = round((C * m + e["avg_grade"] * v) / (C + v), 2)
+        return entries
+
+    # ------------------------------------------------------------------
+    # Teacher ranking  (scope: overall or group)
     # ------------------------------------------------------------------
     async def get_ranking(
         self,
         session: AsyncSession,
-        scope: RankingScope,
-        scope_id: Optional[int] = None,
+        scope: TeacherRankingScope,
+        scope_id: int | None = None,
     ) -> TeacherRankingResponse:
         """
-        Return teachers ranked by Bayesian-weighted student grade.
+        Return teachers ranked by Bayesian-weighted average student grade.
 
-        Grade scale (stored by quiz_process):
-            ≥ 86 % → 5   |   ≥ 72 % → 4   |   ≥ 56 % → 3   |   < 56 % → 2
+        Grade stored by quiz_process: 2 (fail) / 3 / 4 / 5 (excellent)
 
-        Bayesian weighted rating formula (same as IMDB / Letterboxd):
-            weighted_rating = (C × m + SUM(grades)) / (C + student_count)
+        BUG fix: use AVG(result.grade) not SUM/COUNT(distinct user) which
+        inflated scores when students took many quizzes.
 
-        Where:
-            m = global mean grade across ALL teachers in scope
-            C = confidence threshold = 5  (minimum students to fully trust a score)
-
-        Effect:
-            • A teacher with 1 student scoring 5 is pulled toward the global mean.
-            • A teacher with 50 students is barely affected — their real avg dominates.
-            • Result is always in the 2–5 range.
-
-        Tiebreaker: if two teachers have the same weighted_rating,
-        the one with MORE students ranks higher (more data = more reliable).
+        Scopes:
+            overall  – all teachers in the university
+            group    – teachers assigned to a specific group
         """
-        # ---- C constant --------------------------------------------------
-        C = 5  # confidence threshold (minimum "virtual" sample size)
-
         include_group = scope == "group"
 
         columns = [
@@ -349,9 +369,8 @@ class TeacherRepository:
             Kafedra.faculty_id,
             Faculty.name.label("faculty_name"),
             func.count(func.distinct(Result.user_id)).label("student_count"),
-            func.coalesce(func.sum(Result.grade), 0).label("total_grade"),
+            func.coalesce(func.avg(Result.grade), 0).label("avg_grade"),
         ]
-
         if include_group:
             columns += [
                 Group.id.label("group_id"),
@@ -365,11 +384,9 @@ class TeacherRepository:
             .join(GroupTeacher, Teacher.user_id == GroupTeacher.teacher_id)
             .join(Result, GroupTeacher.group_id == Result.group_id)
         )
-
         if include_group:
             stmt = stmt.join(Group, GroupTeacher.group_id == Group.id)
 
-        # ---- scope filters -----------------------------------------------
         if scope == "group":
             if scope_id is None:
                 raise HTTPException(
@@ -378,114 +395,153 @@ class TeacherRepository:
                 )
             stmt = stmt.where(Result.group_id == scope_id)
 
-        elif scope == "kafedra":
-            if scope_id is None:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="scope_id (kafedra_id) is required for scope='kafedra'",
-                )
-            stmt = stmt.where(Teacher.kafedra_id == scope_id)
-
-        elif scope == "faculty":
-            if scope_id is None:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="scope_id (faculty_id) is required for scope='faculty'",
-                )
-            stmt = stmt.where(Kafedra.faculty_id == scope_id)
-
-        # "overall" → no filter
-
-        # ---- group-by (no order_by yet — we sort in Python after Bayesian) -
         group_by_cols = [
-            Teacher.id,
-            Teacher.full_name,
-            Teacher.kafedra_id,
-            Kafedra.name,
-            Kafedra.faculty_id,
-            Faculty.name,
+            Teacher.id, Teacher.full_name, Teacher.kafedra_id,
+            Kafedra.name, Kafedra.faculty_id, Faculty.name,
         ]
         if include_group:
             group_by_cols += [Group.id, Group.name]
-
         stmt = stmt.group_by(*group_by_cols)
 
         rows = (await session.execute(stmt)).mappings().all()
-
         if not rows:
-            return TeacherRankingResponse(
-                scope=scope,
-                scope_id=scope_id,
-                total=0,
-                teachers=[],
-            )
+            return TeacherRankingResponse(scope=scope, scope_id=scope_id, total=0, teachers=[])
 
-        # ---- Phase 1: compute per-teacher avg and global mean ------------
-        # Build an intermediate list first so we can calculate global m.
-        intermediate = []
-        total_grades_all = 0.0
-        total_students_all = 0
-
-        for row in rows:
-            student_count = int(row["student_count"])
-            total_grade = float(row["total_grade"])
-            avg_grade = total_grade / student_count if student_count > 0 else 0.0
-            intermediate.append({
+        entries = [
+            {
                 "row": row,
-                "student_count": student_count,
-                "total_grade": total_grade,
-                "avg_grade": avg_grade,
-            })
-            total_grades_all += total_grade
-            total_students_all += student_count
+                "student_count": int(row["student_count"]),
+                "avg_grade": float(row["avg_grade"]),
+            }
+            for row in rows
+        ]
+        entries = self._bayesian(entries)
+        entries.sort(key=lambda e: (e["weighted_rating"], e["student_count"]), reverse=True)
 
-        # Global mean m = (sum of all grades) / (total students across all teachers)
-        m: float = (
-            total_grades_all / total_students_all
-            if total_students_all > 0
-            else 3.0  # fallback neutral midpoint of 2–5 scale
-        )
-
-        # ---- Phase 2: compute Bayesian weighted_rating & sort ------------
-        for entry in intermediate:
-            v = entry["student_count"]
-            # weighted_rating = (C×m + total_grade) / (C + v)
-            entry["weighted_rating"] = (C * m + entry["total_grade"]) / (C + v)
-
-        # Sort: weighted_rating DESC, then student_count DESC (tiebreaker)
-        intermediate.sort(
-            key=lambda e: (e["weighted_rating"], e["student_count"]),
-            reverse=True,
-        )
-
-        # ---- Phase 3: build response objects ----------------------------
-        ranked: list[TeacherRankItem] = []
-        for rank, entry in enumerate(intermediate, start=1):
-            row = entry["row"]
-            ranked.append(
-                TeacherRankItem(
-                    rank=rank,
-                    teacher_id=row["teacher_id"],
-                    full_name=row["full_name"],
-                    kafedra_id=row["kafedra_id"],
-                    kafedra_name=row["kafedra_name"],
-                    faculty_id=row["faculty_id"],
-                    faculty_name=row["faculty_name"],
-                    group_id=row.get("group_id"),
-                    group_name=row.get("group_name"),
-                    student_count=entry["student_count"],
-                    total_grade=entry["total_grade"],
-                    avg_grade=round(entry["avg_grade"], 2),
-                    weighted_rating=round(entry["weighted_rating"], 2),
-                )
+        teachers = [
+            TeacherRankItem(
+                rank=rank,
+                teacher_id=e["row"]["teacher_id"],
+                full_name=e["row"]["full_name"],
+                kafedra_id=e["row"]["kafedra_id"],
+                kafedra_name=e["row"]["kafedra_name"],
+                faculty_id=e["row"]["faculty_id"],
+                faculty_name=e["row"]["faculty_name"],
+                group_id=e["row"].get("group_id"),
+                group_name=e["row"].get("group_name"),
+                student_count=e["student_count"],
+                avg_grade=round(e["avg_grade"], 2),
+                weighted_rating=e["weighted_rating"],
             )
+            for rank, e in enumerate(entries, start=1)
+        ]
+        return TeacherRankingResponse(scope=scope, scope_id=scope_id, total=len(teachers), teachers=teachers)
 
-        return TeacherRankingResponse(
-            scope=scope,
-            scope_id=scope_id,
-            total=len(ranked),
-            teachers=ranked,
+    # ------------------------------------------------------------------
+    # Faculty ranking
+    # ------------------------------------------------------------------
+    async def get_faculty_ranking(self, session: AsyncSession) -> FacultyRankingResponse:
+        """
+        Rank faculties by the average grade of all their students.
+        Uses Bayesian weighting so smaller faculties are pulled toward the mean.
+        """
+        stmt = (
+            select(
+                Faculty.id.label("faculty_id"),
+                Faculty.name.label("faculty_name"),
+                func.count(func.distinct(Kafedra.id)).label("kafedra_count"),
+                func.count(func.distinct(Result.user_id)).label("student_count"),
+                func.coalesce(func.avg(Result.grade), 0).label("avg_grade"),
+            )
+            .join(Kafedra, Kafedra.faculty_id == Faculty.id)
+            .join(GroupTeacher, GroupTeacher.teacher_id == Teacher.user_id)
+            .join(Teacher, Teacher.kafedra_id == Kafedra.id)
+            .join(Result, Result.group_id == GroupTeacher.group_id)
+            .group_by(Faculty.id, Faculty.name)
         )
+        rows = (await session.execute(stmt)).mappings().all()
+        if not rows:
+            return FacultyRankingResponse(total=0, faculties=[])
+
+        entries = [
+            {
+                "row": row,
+                "student_count": int(row["student_count"]),
+                "avg_grade": float(row["avg_grade"]),
+            }
+            for row in rows
+        ]
+        entries = self._bayesian(entries)
+        entries.sort(key=lambda e: (e["weighted_rating"], e["student_count"]), reverse=True)
+
+        faculties = [
+            FacultyRankItem(
+                rank=rank,
+                faculty_id=e["row"]["faculty_id"],
+                faculty_name=e["row"]["faculty_name"],
+                kafedra_count=int(e["row"]["kafedra_count"]),
+                student_count=e["student_count"],
+                avg_grade=round(e["avg_grade"], 2),
+                weighted_rating=e["weighted_rating"],
+            )
+            for rank, e in enumerate(entries, start=1)
+        ]
+        return FacultyRankingResponse(total=len(faculties), faculties=faculties)
+
+    # ------------------------------------------------------------------
+    # Kafedra ranking
+    # ------------------------------------------------------------------
+    async def get_kafedra_ranking(self, session: AsyncSession) -> KafedraRankingResponse:
+        """
+        Rank kafedras (chairs) by the average grade of all their students.
+        Uses Bayesian weighting so smaller kafedras are pulled toward the mean.
+        """
+        stmt = (
+            select(
+                Kafedra.id.label("kafedra_id"),
+                Kafedra.name.label("kafedra_name"),
+                Kafedra.faculty_id,
+                Faculty.name.label("faculty_name"),
+                func.count(func.distinct(Teacher.id)).label("teacher_count"),
+                func.count(func.distinct(Result.user_id)).label("student_count"),
+                func.coalesce(func.avg(Result.grade), 0).label("avg_grade"),
+            )
+            .join(Faculty, Faculty.id == Kafedra.faculty_id)
+            .join(Teacher, Teacher.kafedra_id == Kafedra.id)
+            .join(GroupTeacher, GroupTeacher.teacher_id == Teacher.user_id)
+            .join(Result, Result.group_id == GroupTeacher.group_id)
+            .group_by(Kafedra.id, Kafedra.name, Kafedra.faculty_id, Faculty.name)
+        )
+        rows = (await session.execute(stmt)).mappings().all()
+        if not rows:
+            return KafedraRankingResponse(total=0, kafedras=[])
+
+        entries = [
+            {
+                "row": row,
+                "student_count": int(row["student_count"]),
+                "avg_grade": float(row["avg_grade"]),
+            }
+            for row in rows
+        ]
+        entries = self._bayesian(entries)
+        entries.sort(key=lambda e: (e["weighted_rating"], e["student_count"]), reverse=True)
+
+        kafedras = [
+            KafedraRankItem(
+                rank=rank,
+                kafedra_id=e["row"]["kafedra_id"],
+                kafedra_name=e["row"]["kafedra_name"],
+                faculty_id=e["row"]["faculty_id"],
+                faculty_name=e["row"]["faculty_name"],
+                teacher_count=int(e["row"]["teacher_count"]),
+                student_count=e["student_count"],
+                avg_grade=round(e["avg_grade"], 2),
+                weighted_rating=e["weighted_rating"],
+            )
+            for rank, e in enumerate(entries, start=1)
+        ]
+        return KafedraRankingResponse(total=len(kafedras), kafedras=kafedras)
 
 
 get_teacher_repository = TeacherRepository()

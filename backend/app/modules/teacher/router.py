@@ -18,6 +18,8 @@ from .schemas import (
     TeacherAssignedSubjectsResponse,
     TeacherAssignedGroupsResponse,
     TeacherRankingResponse,
+    FacultyRankingResponse,
+    KafedraRankingResponse,
 )
 from app.models.user.model import User
 # from app.core.cache import clear_cache, custom_key_builder
@@ -137,6 +139,7 @@ async def get_teacher_assigned_groups(
     )
 
 
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Ranking endpoints
 # ─────────────────────────────────────────────────────────────────────────────
@@ -150,42 +153,8 @@ async def teacher_ranking_overall(
     session: AsyncSession = Depends(db_helper.session_getter),
     _: PermissionRequired = Depends(PermissionRequired("read:teacher")),
 ):
-    """Return all teachers ranked by their students' average grade (desc)."""
-    return await get_teacher_repository.get_ranking(
-        session=session, scope="overall"
-    )
-
-
-@router.get(
-    "/ranking/faculty/{faculty_id}",
-    response_model=TeacherRankingResponse,
-    summary="Teacher ranking — by faculty",
-)
-async def teacher_ranking_by_faculty(
-    faculty_id: int,
-    session: AsyncSession = Depends(db_helper.session_getter),
-    _: PermissionRequired = Depends(PermissionRequired("read:teacher")),
-):
-    """Return teachers ranked by avg student grade within a specific faculty."""
-    return await get_teacher_repository.get_ranking(
-        session=session, scope="faculty", scope_id=faculty_id
-    )
-
-
-@router.get(
-    "/ranking/kafedra/{kafedra_id}",
-    response_model=TeacherRankingResponse,
-    summary="Teacher ranking — by kafedra (chair)",
-)
-async def teacher_ranking_by_kafedra(
-    kafedra_id: int,
-    session: AsyncSession = Depends(db_helper.session_getter),
-    _: PermissionRequired = Depends(PermissionRequired("read:teacher")),
-):
-    """Return teachers ranked by avg student grade within a specific kafedra."""
-    return await get_teacher_repository.get_ranking(
-        session=session, scope="kafedra", scope_id=kafedra_id
-    )
+    """Return all teachers ranked by Bayesian weighted avg student grade."""
+    return await get_teacher_repository.get_ranking(session=session, scope="overall")
 
 
 @router.get(
@@ -198,8 +167,33 @@ async def teacher_ranking_by_group(
     session: AsyncSession = Depends(db_helper.session_getter),
     _: PermissionRequired = Depends(PermissionRequired("read:teacher")),
 ):
-    """Return teachers ranked by avg student grade within a specific group."""
+    """Return teachers of a specific group ranked by Bayesian weighted avg grade."""
     return await get_teacher_repository.get_ranking(
         session=session, scope="group", scope_id=group_id
     )
 
+
+@router.get(
+    "/ranking/faculty",
+    response_model=FacultyRankingResponse,
+    summary="Faculty ranking — faculties ranked by avg student grade",
+)
+async def faculty_ranking(
+    session: AsyncSession = Depends(db_helper.session_getter),
+    _: PermissionRequired = Depends(PermissionRequired("read:teacher")),
+):
+    """Return all faculties ranked by avg student grade (Bayesian weighted)."""
+    return await get_teacher_repository.get_faculty_ranking(session=session)
+
+
+@router.get(
+    "/ranking/kafedra",
+    response_model=KafedraRankingResponse,
+    summary="Kafedra ranking — chairs ranked by avg student grade",
+)
+async def kafedra_ranking(
+    session: AsyncSession = Depends(db_helper.session_getter),
+    _: PermissionRequired = Depends(PermissionRequired("read:teacher")),
+):
+    """Return all kafedras (chairs) ranked by avg student grade (Bayesian weighted)."""
+    return await get_teacher_repository.get_kafedra_ranking(session=session)
