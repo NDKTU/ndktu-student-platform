@@ -12,9 +12,11 @@ import {
     useKafedraRanking,
 } from '@/hooks/useTeachers';
 import { useGroups } from '@/hooks/useGroups';
-import { useFaculties } from '@/hooks/useFaculties';
-import { useKafedras } from '@/hooks/useKafedras';
+import { useFaculties, useKafedras } from '@/hooks/useReferenceData';
 import type { TeacherRankItem, FacultyRankItem, KafedraRankItem } from '@/services/teacherService';
+import type { Faculty } from '@/services/facultyService';
+import type { Kafedra } from '@/services/kafedraService';
+import type { Group } from '@/services/groupService';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Tab = 'teachers' | 'faculty' | 'kafedra';
@@ -85,7 +87,7 @@ const TeacherFilters = ({
             {/* Faculty filter */}
             <div className="w-56">
                 <Combobox
-                    options={faculties.map((f) => ({ value: String(f.id), label: f.name }))}
+                    options={faculties.map((f: Faculty) => ({ value: String(f.id), label: f.name }))}
                     value={filters.faculty_id ? String(filters.faculty_id) : ''}
                     onChange={(v) => onChange({ ...filters, faculty_id: v ? Number(v) : undefined })}
                     placeholder="Fakultet bo'yicha..."
@@ -95,7 +97,7 @@ const TeacherFilters = ({
             {/* Kafedra filter */}
             <div className="w-56">
                 <Combobox
-                    options={kafedras.map((k) => ({ value: String(k.id), label: k.name }))}
+                    options={kafedras.map((k: Kafedra) => ({ value: String(k.id), label: k.name }))}
                     value={filters.kafedra_id ? String(filters.kafedra_id) : ''}
                     onChange={(v) => onChange({ ...filters, kafedra_id: v ? Number(v) : undefined })}
                     placeholder="Kafedra bo'yicha..."
@@ -105,7 +107,7 @@ const TeacherFilters = ({
             {/* Group filter */}
             <div className="w-48">
                 <Combobox
-                    options={groups.map((g) => ({ value: String(g.id), label: g.name }))}
+                    options={groups.map((g: Group) => ({ value: String(g.id), label: g.name }))}
                     value={filters.group_id ? String(filters.group_id) : ''}
                     onChange={(v) => onChange({ ...filters, group_id: v ? Number(v) : undefined })}
                     placeholder="Guruh bo'yicha..."
