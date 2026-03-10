@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Any
+from typing import Any, Literal, Optional
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 
@@ -128,3 +128,35 @@ class TeacherAssignedGroupsResponse(BaseModel):
         if hasattr(data, "user") and data.user is not None:
             data.__dict__["group_teachers"] = data.user.group_teachers
         return data
+
+
+# ── Ranking schemas ──────────────────────────────────────────────────────────
+
+class TeacherRankItem(BaseModel):
+    """A single teacher entry in a ranking list."""
+    rank: int
+    teacher_id: int
+    full_name: str
+    kafedra_id: Optional[int] = None
+    kafedra_name: Optional[str] = None
+    faculty_id: Optional[int] = None
+    faculty_name: Optional[str] = None
+    # Present only when scope == "group"
+    group_id: Optional[int] = None
+    group_name: Optional[str] = None
+    student_count: int
+    total_grade: float
+    avg_grade: float
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+RankingScope = Literal["overall", "faculty", "kafedra", "group"]
+
+
+class TeacherRankingResponse(BaseModel):
+    scope: RankingScope
+    scope_id: Optional[int] = None   # faculty_id / kafedra_id / group_id
+    total: int
+    teachers: list[TeacherRankItem]
+

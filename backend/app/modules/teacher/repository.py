@@ -1,4 +1,5 @@
 import logging
+from typing import Literal, Optional
 
 from fastapi import HTTPException, status
 from app.models.teacher.model import Teacher
@@ -7,6 +8,9 @@ from app.models.group.model import Group
 from app.models.subject.model import Subject
 from app.models.group_teachers.model import GroupTeacher
 from app.models.subject_teacher.model import SubjectTeacher
+from app.models.kafedra.model import Kafedra
+from app.models.faculty.model import Faculty
+from app.models.results.model import Result
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +21,9 @@ from .schemas import (
     TeacherListResponse,
     TeacherGroupAssignRequest,
     TeacherSubjectAssignRequest,
+    TeacherRankItem,
+    TeacherRankingResponse,
+    RankingScope,
 )
 
 logger = logging.getLogger(__name__)
@@ -298,5 +305,134 @@ class TeacherRepository:
             )
 
         return teacher
+
+    # ------------------------------------------------------------------
+    # Ranking
+    # ------------------------------------------------------------------
+    async def get_ranking(
+        self,
+        session: AsyncSession,
+        scope: RankingScope,
+        scope_id: Optional[int] = None,
+    ) -> TeacherRankingResponse:
+        """
+        Return teachers ranked by average student grade.
+
+        Ranking formula:
+            avg_grade = SUM(result.grade) / COUNT(DISTINCT result.user_id)
+
+        Scope controls which results are included:
+            - "overall"  → all results in the system
+            - "faculty"  → results whose group belongs to the given faculty
+            - "kafedra"  → results whose teacher belongs to the given kafedra
+            - "group"    → results for a specific group
+        """
+        include_group = scope == "group"
+
+        columns = [
+            Teacher.id.label("teacher_id"),
+            Teacher.full_name,
+            Teacher.kafedra_id,
+            Kafedra.name.label("kafedra_name"),
+            Kafedra.faculty_id,
+            Faculty.name.label("faculty_name"),
+            func.count(func.distinct(Result.user_id)).label("student_count"),
+            func.coalesce(func.sum(Result.grade), 0).label("total_grade"),
+        ]
+
+        if include_group:
+            columns += [
+                Group.id.label("group_id"),
+                Group.name.label("group_name"),
+            ]
+
+        stmt = (
+            select(*columns)
+            .join(Kafedra, Teacher.kafedra_id == Kafedra.id)
+            .join(Faculty, Kafedra.faculty_id == Faculty.id)
+            .join(GroupTeacher, Teacher.user_id == GroupTeacher.teacher_id)
+            .join(Result, GroupTeacher.group_id == Result.group_id)
+        )
+
+        if include_group:
+            stmt = stmt.join(Group, GroupTeacher.group_id == Group.id)
+
+        # ---- scope filters ----
+        if scope == "group":
+            if scope_id is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="scope_id (group_id) is required for scope='group'",
+                )
+            stmt = stmt.where(Result.group_id == scope_id)
+
+        elif scope == "kafedra":
+            if scope_id is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="scope_id (kafedra_id) is required for scope='kafedra'",
+                )
+            stmt = stmt.where(Teacher.kafedra_id == scope_id)
+
+        elif scope == "faculty":
+            if scope_id is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="scope_id (faculty_id) is required for scope='faculty'",
+                )
+            stmt = stmt.where(Kafedra.faculty_id == scope_id)
+
+        # "overall" → no filter
+
+        # ---- group-by / order-by ----
+        student_sum = func.coalesce(func.sum(Result.grade), 0)
+        student_cnt = func.count(func.distinct(Result.user_id))
+        avg_expr = student_sum / func.nullif(student_cnt, 0)
+
+        group_by_cols = [
+            Teacher.id,
+            Teacher.full_name,
+            Teacher.kafedra_id,
+            Kafedra.name,
+            Kafedra.faculty_id,
+            Faculty.name,
+        ]
+        if include_group:
+            group_by_cols += [Group.id, Group.name]
+
+        stmt = stmt.group_by(*group_by_cols).order_by(avg_expr.desc())
+
+        rows = (await session.execute(stmt)).mappings().all()
+
+        ranked: list[TeacherRankItem] = []
+        for rank, row in enumerate(rows, start=1):
+            total_grade = float(row["total_grade"])
+            student_count = int(row["student_count"])
+            avg_grade = total_grade / student_count if student_count else 0.0
+
+            ranked.append(
+                TeacherRankItem(
+                    rank=rank,
+                    teacher_id=row["teacher_id"],
+                    full_name=row["full_name"],
+                    kafedra_id=row["kafedra_id"],
+                    kafedra_name=row["kafedra_name"],
+                    faculty_id=row["faculty_id"],
+                    faculty_name=row["faculty_name"],
+                    group_id=row.get("group_id"),
+                    group_name=row.get("group_name"),
+                    student_count=student_count,
+                    total_grade=total_grade,
+                    avg_grade=avg_grade,
+                )
+            )
+
+        return TeacherRankingResponse(
+            scope=scope,
+            scope_id=scope_id,
+            total=len(ranked),
+            teachers=ranked,
+        )
+
 
 get_teacher_repository = TeacherRepository()

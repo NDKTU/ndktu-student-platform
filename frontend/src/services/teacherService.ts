@@ -118,5 +118,52 @@ export const teacherService = {
         const response = await api.get<TeacherAssignedGroupsResponse>(`/teacher/assigned_groups/by-user/${userId}`);
         return response.data;
     },
+
+    // ── Ranking ────────────────────────────────────────────────────────────
+    getRankingOverall: async (): Promise<TeacherRankingResponse> => {
+        const response = await api.get<TeacherRankingResponse>('/teacher/ranking/overall');
+        return response.data;
+    },
+
+    getRankingByFaculty: async (faculty_id: number): Promise<TeacherRankingResponse> => {
+        const response = await api.get<TeacherRankingResponse>(`/teacher/ranking/faculty/${faculty_id}`);
+        return response.data;
+    },
+
+    getRankingByKafedra: async (kafedra_id: number): Promise<TeacherRankingResponse> => {
+        const response = await api.get<TeacherRankingResponse>(`/teacher/ranking/kafedra/${kafedra_id}`);
+        return response.data;
+    },
+
+    getRankingByGroup: async (group_id: number): Promise<TeacherRankingResponse> => {
+        const response = await api.get<TeacherRankingResponse>(`/teacher/ranking/group/${group_id}`);
+        return response.data;
+    },
 };
+
+// ── Ranking types ────────────────────────────────────────────────────────
+export type RankingScope = 'overall' | 'faculty' | 'kafedra' | 'group';
+
+export interface TeacherRankItem {
+    rank: number;
+    teacher_id: number;
+    full_name: string;
+    kafedra_id: number | null;
+    kafedra_name: string | null;
+    faculty_id: number | null;
+    faculty_name: string | null;
+    group_id: number | null;
+    group_name: string | null;
+    student_count: number;
+    total_grade: number;
+    avg_grade: number;
+}
+
+export interface TeacherRankingResponse {
+    scope: RankingScope;
+    scope_id: number | null;
+    total: number;
+    teachers: TeacherRankItem[];
+}
+
 

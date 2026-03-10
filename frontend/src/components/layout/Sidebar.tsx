@@ -24,6 +24,7 @@ import {
     UsersRound,
     FileQuestion,
     PlayCircle,
+    Trophy,
     X,
 } from 'lucide-react';
 import { cn } from '@/utils/utils';
@@ -67,6 +68,7 @@ const adminSections: NavSection[] = [
         items: [
             { name: 'Foydalanuvchilar', href: '/users', icon: Users },
             { name: "O'qituvchilar", href: '/teachers', icon: GraduationCap },
+            { name: 'Reyting', href: '/teacher-ranking', icon: Trophy },
             { name: 'Talabalar', href: '/students', icon: GraduationCap },
         ],
     },

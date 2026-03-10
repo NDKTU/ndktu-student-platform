@@ -88,3 +88,37 @@ export const useTeacherAssignedGroups = (userId?: number) => {
         enabled: !!userId,
     });
 };
+
+// ── Ranking hooks ─────────────────────────────────────────────────────────
+
+export const useTeacherRankingOverall = () => {
+    return useQuery({
+        queryKey: ['teacherRanking', 'overall'],
+        queryFn: () => teacherService.getRankingOverall(),
+    });
+};
+
+export const useTeacherRankingByFaculty = (facultyId?: number) => {
+    return useQuery({
+        queryKey: ['teacherRanking', 'faculty', facultyId],
+        queryFn: () => teacherService.getRankingByFaculty(facultyId!),
+        enabled: !!facultyId,
+    });
+};
+
+export const useTeacherRankingByKafedra = (kafedraId?: number) => {
+    return useQuery({
+        queryKey: ['teacherRanking', 'kafedra', kafedraId],
+        queryFn: () => teacherService.getRankingByKafedra(kafedraId!),
+        enabled: !!kafedraId,
+    });
+};
+
+export const useTeacherRankingByGroup = (groupId?: number) => {
+    return useQuery({
+        queryKey: ['teacherRanking', 'group', groupId],
+        queryFn: () => teacherService.getRankingByGroup(groupId!),
+        enabled: !!groupId,
+    });
+};
+
