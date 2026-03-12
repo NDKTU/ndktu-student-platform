@@ -84,7 +84,7 @@ const QuizzesPage = () => {
     // Fetch data for filters (all items)
     const { data: allSubjectsData } = useSubjects(1, 100);
     const { data: allGroupsData } = useGroups(1, 100, '');
-    const { data: allTeachersData } = useTeachers(1, 200);
+    const { data: allTeachersData } = useTeachers(1, 600);
 
     const updateQuizMutation = useUpdateQuiz();
     const deleteQuizMutation = useDeleteQuiz();

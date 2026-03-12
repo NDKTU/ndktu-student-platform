@@ -17,8 +17,6 @@ import {
     GraduationCap,
     BookOpen,
     FileText,
-    Shield,
-    Key,
     Building2,
     Layers,
     UsersRound,
@@ -70,13 +68,6 @@ const adminSections: NavSection[] = [
             { name: "O'qituvchilar", href: '/teachers', icon: GraduationCap },
             { name: 'Reyting', href: '/teacher-ranking', icon: Trophy },
             { name: 'Talabalar', href: '/students', icon: GraduationCap },
-        ],
-    },
-    {
-        label: 'Kirish huquqlari',
-        items: [
-            { name: 'Rollar', href: '/roles', icon: Shield },
-            { name: 'Ruxsatlar', href: '/permissions', icon: Key },
         ],
     },
     {
