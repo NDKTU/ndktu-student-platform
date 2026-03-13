@@ -1,4 +1,4 @@
-.PHONY: help up down restart logs frontend-logs backend-logs backup backup-database backup-logs backup-images restore
+.PHONY: help up down restart logs frontend-logs backend-logs backup backup-database backup-logs backup-images restore deploy
 
 .DEFAULT_GOAL := help
 
@@ -33,6 +33,8 @@ help:
 	@echo "make restore          - Restore the database from a given SQL.GZ backup file"
 	@echo "                        Example: make restore FILE=backups/backup_2026-02-18_13-00-00.sql.gz"
 	@echo ""
+	@echo "make deploy           - Zero-downtime update for backend"
+	@echo "                        Example: make deploy"
 
 # Start all services
 up:
@@ -76,3 +78,25 @@ backup-images:
 restore:
 	@if [ -z "$(FILE)" ]; then echo "Usage: make restore FILE=backups/backup_YYYY-MM-DD_HH-MM-SS.sql.gz"; exit 1; fi
 	./scripts/restore.sh $(FILE)
+
+
+# Zero-Downtime Deployment
+deploy:
+	@echo "🚀 Starting Zero-Downtime Deployment..."
+	
+	# 1. Собираем новый образ и запускаем вторую копию бэкенда рядом со старой
+	# --scale backend=2 создает второй контейнер
+	# --no-recreate гарантирует, что база данных и nginx не перезагрузятся
+	docker compose up -d --build --scale backend=2 --no-recreate backend
+	
+	@echo "⏳ Waiting for the new instance to pass healthchecks..."
+	# Ждем 20 секунд, чтобы FastAPI успел запуститься и пройти healthcheck
+	@sleep 20
+	
+	# 2. Убираем старый контейнер, оставляя только один новый
+	docker compose up -d --scale backend=1 --no-recreate backend
+	
+	@echo "✅ Deployment finished successfully!"
+	
+	# Очистка старых неиспользуемых образов, чтобы не забивать диск
+	docker image prune -f
