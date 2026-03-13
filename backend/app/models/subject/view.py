@@ -13,7 +13,7 @@ class SubjectView(ModelView, model=Subject):
     }
     column_searchable_list = ("name",)
     column_editable_list = ("name",)
-    column_sortable_list = ("id", "name")
+    # column_sortable_list = ("id", "name")
     column_default_sort = ("id", True)
     form_excluded_columns = [
         "subject_teachers",

@@ -16,7 +16,7 @@ class TeacherView(ModelView, model=Teacher):
     }
     column_searchable_list = ("first_name", "last_name", "full_name")
     column_editable_list = ("first_name", "last_name", "third_name")
-    column_sortable_list = ("id", "last_name", "first_name")
+    # column_sortable_list = ("id", "last_name", "first_name")
     column_default_sort = ("id", True)
     form_excluded_columns = [
         "subject_teachers",

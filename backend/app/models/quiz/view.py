@@ -42,14 +42,14 @@ class QuizView(ModelView, model=Quiz):
         "is_active",
     )
     # ✅ Only scalar columns — relationships can't be sorted
-    column_sortable_list = (
-        "id",
-        "title",
-        "question_number",
-        "duration",
-        "pin",
-        "is_active",
-    )
+    # column_sortable_list = (
+    #     "id",
+    #     "title",
+    #     "question_number",
+    #     "duration",
+    #     "pin",
+    #     "is_active",
+    # )
     column_default_sort = ("id", True)
     form_excluded_columns = [
         "user_answers",
