@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 from app.models.quiz.model import Quiz
 from app.models.question.model import Question
 from app.models.quiz_questions.model import QuizQuestion
-from sqlalchemy import func, select, or_, desc
+from sqlalchemy import func, select, or_, desc, asc
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user.model import User
@@ -158,7 +158,11 @@ class QuizRepository:
         if request.is_active is not None:
              stmt = stmt.where(Quiz.is_active == request.is_active)
 
-        stmt = stmt.order_by(desc(Quiz.created_at))
+        if request.sort_dir and request.sort_dir.lower() == "asc":
+            stmt = stmt.order_by(asc(Quiz.created_at))
+        else:
+            stmt = stmt.order_by(desc(Quiz.created_at))
+        
         stmt = stmt.offset(request.offset).limit(request.limit)
 
         result = await session.execute(stmt)
