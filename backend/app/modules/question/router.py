@@ -15,7 +15,7 @@ from .schemas import (
     QuestionListResponse,
     QuestionBulkDeleteRequest,
 )
-# from app.core.cache import clear_cache, custom_key_builder
+from app.models.user.model import User
 
 logger = logging.getLogger(__name__)
 
@@ -46,10 +46,10 @@ async def create_question(
 async def get_question(
     question_id: int,
     session: AsyncSession = Depends(db_helper.session_getter),
-    _: PermissionRequired = Depends(PermissionRequired("read:question")),
+    current_user: User = Depends(PermissionRequired("read:question")),
 ):
     return await get_question_repository.get_question(
-        session=session, question_id=question_id
+        session=session, question_id=question_id, current_user=current_user
     )
 
 
@@ -58,10 +58,10 @@ async def get_question(
 async def list_questions(
     data: QuestionListRequest = Depends(),
     session: AsyncSession = Depends(db_helper.session_getter),
-    _: PermissionRequired = Depends(PermissionRequired("read:question")),
+    current_user: User = Depends(PermissionRequired("read:question")),
 ):
     return await get_question_repository.list_questions(
-        session=session, request=data
+        session=session, request=data, current_user=current_user
     )
 
 
@@ -70,10 +70,10 @@ async def update_question(
     question_id: int,
     data: QuestionCreateRequest,
     session: AsyncSession = Depends(db_helper.session_getter),
-    _: PermissionRequired = Depends(PermissionRequired("update:question")),
+    current_user: User = Depends(PermissionRequired("update:question")),
 ):
     result = await get_question_repository.update_question(
-        session=session, question_id=question_id, data=data
+        session=session, question_id=question_id, data=data, current_user=current_user
     )
     # await clear_cache(list_questions)
     # await clear_cache(get_question, question_id=question_id)
@@ -84,10 +84,10 @@ async def update_question(
 async def delete_question(
     question_id: int,
     session: AsyncSession = Depends(db_helper.session_getter),
-    _: PermissionRequired = Depends(PermissionRequired("delete:question")),
+    current_user: User = Depends(PermissionRequired("delete:question")),
 ):
     await get_question_repository.delete_question(
-        session=session, question_id=question_id
+        session=session, question_id=question_id, current_user=current_user
     )
     # await clear_cache(list_questions)
     # await clear_cache(get_question, question_id=question_id)
@@ -97,10 +97,10 @@ async def delete_question(
 async def bulk_delete_questions(
     data: QuestionBulkDeleteRequest,
     session: AsyncSession = Depends(db_helper.session_getter),
-    _: PermissionRequired = Depends(PermissionRequired("delete:question")),
+    current_user: User = Depends(PermissionRequired("delete:question")),
 ):
-    count = await get_question_repository.bulk_delete_questions(
-        session=session, data=data
+    return await get_question_repository.bulk_delete_questions(
+        session=session, data=data, current_user=current_user
     )
     return {"deleted_count": count}
 

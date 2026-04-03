@@ -12,7 +12,7 @@ from .schemas import (
     QuestionListResponse,
     QuestionBulkDeleteRequest,
 )
-from core.config import settings
+from app.models.user.model import User
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ class QuestionRepository:
         return new_question
 
     async def get_question(
-        self, session: AsyncSession, question_id: int
+        self, session: AsyncSession, question_id: int, current_user: User
     ) -> Question:
         stmt = select(Question).options(
             selectinload(Question.subject),
@@ -61,15 +61,30 @@ class QuestionRepository:
                 status_code=status.HTTP_404_NOT_FOUND, detail="Question not found"
             )
 
+        # Check ownership for teachers
+        is_admin = any(role.name.lower() == "admin" for role in current_user.roles)
+        if not is_admin and question.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: you can only access your own questions"
+            )
+
         return question
 
     async def list_questions(
-        self, session: AsyncSession, request: QuestionListRequest
+        self, session: AsyncSession, request: QuestionListRequest, current_user: User
     ) -> QuestionListResponse:
         stmt = select(Question).options(
             selectinload(Question.subject),
             selectinload(Question.user),
         )
+
+        # Check if user is teacher (not admin)
+        is_teacher = any(role.name.lower() == "teacher" for role in current_user.roles)
+        is_admin = any(role.name.lower() == "admin" for role in current_user.roles)
+
+        if not is_admin and is_teacher:
+            # Teachers can only see their own questions
+            stmt = stmt.where(Question.user_id == current_user.id)
 
         if request.text:
             stmt = stmt.where(Question.text.ilike(f"%{request.text}%"))
@@ -87,6 +102,8 @@ class QuestionRepository:
         questions = result.scalars().all()
 
         count_stmt = select(func.count()).select_from(Question)
+        if not is_admin and is_teacher:
+            count_stmt = count_stmt.where(Question.user_id == current_user.id)
         if request.text:
             count_stmt = count_stmt.where(Question.text.ilike(f"%{request.text}%"))
         if request.subject_id:
@@ -102,7 +119,7 @@ class QuestionRepository:
         )
 
     async def update_question(
-        self, session: AsyncSession, question_id: int, data: QuestionCreateRequest
+        self, session: AsyncSession, question_id: int, data: QuestionCreateRequest, current_user: User
     ) -> Question:
         stmt = select(Question).options(
             selectinload(Question.subject),
@@ -114,6 +131,13 @@ class QuestionRepository:
         if not question:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Question not found"
+            )
+
+        # Check ownership for teachers
+        is_admin = any(role.name.lower() == "admin" for role in current_user.roles)
+        if not is_admin and question.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: you can only update your own questions"
             )
         
         question.subject_id = data.subject_id
@@ -129,7 +153,7 @@ class QuestionRepository:
         return question
 
     async def delete_question(
-        self, session: AsyncSession, question_id: int
+        self, session: AsyncSession, question_id: int, current_user: User
     ) -> None:
         stmt = select(Question).where(Question.id == question_id)
         result = await session.execute(stmt)
@@ -140,13 +164,28 @@ class QuestionRepository:
                 status_code=status.HTTP_404_NOT_FOUND, detail="Question not found"
             )
 
+        # Check ownership for teachers
+        is_admin = any(role.name.lower() == "admin" for role in current_user.roles)
+        if not is_admin and question.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: you can only delete your own questions"
+            )
+
         await session.delete(question)
         await session.commit()
 
     async def bulk_delete_questions(
-        self, session: AsyncSession, data: QuestionBulkDeleteRequest
+        self, session: AsyncSession, data: QuestionBulkDeleteRequest, current_user: User
     ) -> int:
         from sqlalchemy import delete
+
+        # Check ownership for teachers
+        is_admin = any(role.name.lower() == "admin" for role in current_user.roles)
+        if not is_admin:
+            if data.user_id != current_user.id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: you can only delete your own questions"
+                )
         
         stmt = delete(Question).where(
             Question.subject_id == data.subject_id,

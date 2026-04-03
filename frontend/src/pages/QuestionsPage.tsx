@@ -93,6 +93,8 @@ interface QuestionsTableProps {
 
 const QuestionsTable = ({ subjectId, subjects, onBack, selectedSubjectName }: QuestionsTableProps) => {
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const isTeacher = user?.roles?.some(r => r.name.toLowerCase() === 'teacher');
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 10;
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -124,6 +126,7 @@ const QuestionsTable = ({ subjectId, subjects, onBack, selectedSubjectName }: Qu
         pageSize,
         debouncedSearch,
         subjectId,
+        isTeacher ? user?.id : undefined,  // Pass user_id only for teachers
     );
     const deleteQuestionMutation = useDeleteQuestion();
 
