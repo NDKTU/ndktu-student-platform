@@ -33,12 +33,6 @@ const UserAnswersPage = () => {
     const answers = data?.answers || [];
     const totalPages = data ? Math.ceil(data.total / pageSize) : 1;
 
-    const stripHtml = (html: string) => {
-        const div = document.createElement('div');
-        div.innerHTML = html;
-        return div.textContent || div.innerText || '';
-    };
-
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">
@@ -79,10 +73,17 @@ const UserAnswersPage = () => {
                                     }`}
                             >
                                 <CardHeader className="pb-3">
-                                    <div className="flex items-start justify-between">
-                                        <CardTitle className="text-base font-medium">
-                                            <span className="text-muted-foreground mr-2">#{questionNumber}</span>
-                                            {question ? stripHtml(question.text) : `Savol #${answer.question_id}`}
+                                    <div className="flex items-start justify-between gap-2">
+                                        <CardTitle className="text-base font-medium flex items-start gap-2 min-w-0">
+                                            <span className="text-muted-foreground shrink-0">#{questionNumber}</span>
+                                            {question ? (
+                                                <span
+                                                    className="min-w-0 [&_img]:inline-block [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-md [&_img]:my-1"
+                                                    dangerouslySetInnerHTML={{ __html: question.text }}
+                                                />
+                                            ) : (
+                                                <span>Savol #{answer.question_id}</span>
+                                            )}
                                         </CardTitle>
                                         {answer.is_correct ? (
                                             <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
@@ -110,10 +111,13 @@ const UserAnswersPage = () => {
                                                 return (
                                                     <div
                                                         key={opt}
-                                                        className={`rounded-md border px-3 py-2 text-sm transition-colors ${optionStyles}`}
+                                                        className={`rounded-md border px-3 py-2 text-sm transition-colors flex items-start gap-2 ${optionStyles}`}
                                                     >
-                                                        <span className="font-semibold mr-2">{optionLabels[opt]})</span>
-                                                        {optionText}
+                                                        <span className="font-semibold shrink-0">{optionLabels[opt]})</span>
+                                                        <span
+                                                            className="flex-1 min-w-0 [&_img]:inline-block [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded"
+                                                            dangerouslySetInnerHTML={{ __html: optionText }}
+                                                        />
                                                     </div>
                                                 );
                                             })}
