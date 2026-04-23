@@ -103,6 +103,10 @@ deploy:
 	docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build backend
 	@echo "Updating Frontend..."
 	docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build frontend
+	@echo "Ensuring nginx is up..."
+	docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d nginx pgadmin
+	@echo "Reloading nginx so it picks up new backend/frontend container IPs..."
+	docker compose -f docker-compose.yml -f docker-compose.prod.yml restart nginx
 	@echo "✅ Deployment finished successfully!"
 	docker image prune -f
 
